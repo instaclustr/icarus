@@ -21,7 +21,7 @@ jobs:
             - ~/.m2
           key: cassandra-sidecar-{{ checksum "pom.xml" }}
 
-      - run: mvn -PsingleNode,multiNode clean install
+      - run: mvn -PsingleNode clean install
 
       - store_test_results:
           path: ~/cassandra-sidecar/target/surefire-reports
@@ -47,7 +47,7 @@ jobs:
           key: cassandra-sidecar-{{ checksum "pom.xml" }}
 
       # Cassandra 3.x does not run with Java 11 so we are running with Cassandra 4.0 as tests are running embedded Cassandra instance too
-      - run: mvn -PsingleNode,multiNode clean install -Dcassandra.version=4.0-alpha3 -Djava.version=11
+      - run: mvn -PsingleNode clean install -Dcassandra.version=4.0-alpha3 -Djava.version=11
 
       - store_test_results:
           path: ~/cassandra-sidecar/target/surefire-reports
