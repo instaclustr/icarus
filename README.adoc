@@ -1,0 +1,5 @@
+== Cassandra Sidecar
+
+image:https://img.shields.io/maven-central/v/com.instaclustr/cassandra-sidecar.svg?label=Maven%20Central[link=https://search.maven.org/search?q=g:%22com.instaclustr%22%20AND%20a:%22cassandra-sidecar%22]
+
+image:https://circleci.com/gh/instaclustr/cassandra-sidecar.svg?style=svg["Instaclustr",link="https://circleci.com/gh/instaclustr/cassandra-sidecar"]

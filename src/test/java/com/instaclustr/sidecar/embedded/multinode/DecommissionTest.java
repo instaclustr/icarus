@@ -31,14 +31,26 @@ public class DecommissionTest extends AbstractCassandraSidecarTest {
 
         factory.setRackConfig(new ClassPathResource("cassandra1-rackdc.properties"));
         factory.setWorkingDirectory(Files.createTempDirectory(null));
-        factory.setConfig(new ClassPathResource("first.yaml"));
+
+        if (CASSANDRA_VERSION.startsWith("4")) {
+            factory.setConfig(new ClassPathResource("first-4.yaml"));
+        } else {
+            factory.setConfig(new ClassPathResource("first.yaml"));
+        }
+
         factory.setJmxLocalPort(7199);
 
         Cassandra firstNode = factory.create();
 
         factory.setRackConfig(new ClassPathResource("cassandra2-rackdc.properties"));
         factory.setWorkingDirectory(Files.createTempDirectory(null));
-        factory.setConfig(new ClassPathResource("second.yaml"));
+
+        if (CASSANDRA_VERSION.startsWith("4")) {
+            factory.setConfig(new ClassPathResource("second-4.yaml"));
+        } else {
+            factory.setConfig(new ClassPathResource("second.yaml"));
+        }
+
         factory.setJmxLocalPort(7200);
 
         Cassandra secondNode = factory.create();

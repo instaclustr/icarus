@@ -35,7 +35,6 @@ import com.instaclustr.sidecar.picocli.SidecarSpec;
 import com.instaclustr.threading.ExecutorsModule;
 import com.instaclustr.version.VersionModule;
 import jmx.org.apache.cassandra.CassandraJMXConnectionInfo;
-import org.slf4j.bridge.SLF4JBridgeHandler;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Model.CommandSpec;
@@ -68,9 +67,6 @@ public final class Sidecar extends CLIApplication implements Callable<Void> {
     }
 
     public static void main(final String[] args, boolean exit) {
-        SLF4JBridgeHandler.removeHandlersForRootLogger();
-        SLF4JBridgeHandler.install();
-
         int exitCode = execute(new Sidecar(), args);
 
         if (exit) {

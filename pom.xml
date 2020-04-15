@@ -18,9 +18,11 @@
     <git.command.plugin.version>2.2.4</git.command.plugin.version>
     <maven.jar.plugin.version>3.1.1</maven.jar.plugin.version>
     <maven.surefire.plugin.version>3.0.0-M4</maven.surefire.plugin.version>
-    
-    <maven.compiler.source>1.8</maven.compiler.source>
-    <maven.compiler.target>1.8</maven.compiler.target>
+
+    <java.version>1.8</java.version>
+
+    <maven.compiler.source>${java.version}</maven.compiler.source>
+    <maven.compiler.target>${java.version}</maven.compiler.target>
     
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
@@ -35,7 +37,7 @@
     <dependency>
       <groupId>com.instaclustr</groupId>
       <artifactId>instaclustr-backup-restore</artifactId>
-      <version>1.1.5</version>
+      <version>1.1.6</version>
     </dependency>
     
     <!-- test dependencies -->

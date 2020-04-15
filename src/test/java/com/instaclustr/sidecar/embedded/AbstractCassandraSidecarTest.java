@@ -40,7 +40,7 @@ public abstract class AbstractCassandraSidecarTest {
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractCassandraSidecarTest.class);
 
-    private static final String CASSANDRA_VERSION = System.getProperty("backup.tests.cassandra.version", "3.11.6");
+    protected static final String CASSANDRA_VERSION = System.getProperty("cassandra.version", "3.11.6");
 
     private static Artifact CASSANDRA_ARTIFACT = Artifact.ofVersion(Version.of(CASSANDRA_VERSION));
 
