@@ -14,7 +14,7 @@ import com.google.inject.assistedinject.Assisted;
 import com.instaclustr.operations.FunctionWithEx;
 import com.instaclustr.operations.Operation;
 import jmx.org.apache.cassandra.service.CassandraJMXService;
-import jmx.org.apache.cassandra.service.StorageServiceMBean;
+import jmx.org.apache.cassandra.service.cassandra3.StorageServiceMBean;
 
 public class RebuildOperation extends Operation<RebuildOperationRequest> {
 

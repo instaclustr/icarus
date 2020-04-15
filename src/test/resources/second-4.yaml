@@ -18,7 +18,6 @@ cdc_enabled: false
 disk_failure_policy: stop
 commit_failure_policy: stop
 prepared_statements_cache_size_mb: null
-thrift_prepared_statements_cache_size_mb: null
 key_cache_size_in_mb: null
 key_cache_save_period: 14400
 row_cache_size_in_mb: 0
@@ -46,12 +45,8 @@ ssl_storage_port: 7001
 listen_address: 127.0.0.2
 start_native_transport: true
 native_transport_port: 9042
-start_rpc: false
 rpc_address: 127.0.0.2
-rpc_port: 9160
 rpc_keepalive: true
-rpc_server_type: sync
-thrift_framed_transport_size_in_mb: 15
 incremental_backups: false
 snapshot_before_compaction: false
 auto_snapshot: true
@@ -72,7 +67,6 @@ endpoint_snitch: SimpleSnitch
 dynamic_snitch_update_interval_in_ms: 100
 dynamic_snitch_reset_interval_in_ms: 600000
 dynamic_snitch_badness_threshold: 0.1
-request_scheduler: org.apache.cassandra.scheduler.NoScheduler
 server_encryption_options: {enabled: false, internode_encryption: none, keystore: conf/.keystore,
   keystore_password: cassandra, truststore: conf/.truststore, truststore_password: cassandra}
 client_encryption_options: {enabled: false, optional: false, keystore: conf/.keystore,

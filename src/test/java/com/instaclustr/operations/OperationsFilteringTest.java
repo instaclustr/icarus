@@ -27,7 +27,7 @@ public class OperationsFilteringTest extends AbstractSidecarTest {
         final Function<SidecarClient, List<OperationResult<?>>> requests = client -> of(client.cleanup(new CleanupOperationRequest("some_keyspace",
                                                                                                                                    null,
                                                                                                                                    0)),
-                                                                                        client.decommission(new DecommissionOperationRequest()));
+                                                                                        client.decommission(new DecommissionOperationRequest(false)));
 
         final Pair<AtomicReference<List<OperationResult<?>>>, AtomicBoolean> result = performOnRunningServer(requests);
 

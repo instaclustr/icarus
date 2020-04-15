@@ -3,3 +3,92 @@
 image:https://img.shields.io/maven-central/v/com.instaclustr/cassandra-sidecar.svg?label=Maven%20Central[link=https://search.maven.org/search?q=g:%22com.instaclustr%22%20AND%20a:%22cassandra-sidecar%22]
 
 image:https://circleci.com/gh/instaclustr/cassandra-sidecar.svg?style=svg["Instaclustr",link="https://circleci.com/gh/instaclustr/cassandra-sidecar"]
+
+This repository is home of a sidecar for Apache Cassandra database. Sidecar is meant to be run alongside of Cassandra instance
+and sidecar talks to Cassandra via JMX.
+
+Sidecar JAR is also integrating backup-restore solution of Instaclustr seamlessly so it might be used in two modes -
+either as a long-running server application which responds to clients requests or as a CLI application via which one
+can backup / restore a Cassandra node.
+
+=== Usage
+
+[source,bash]
+----
+$ java -jar cassandra-sidecar-1.0.0.jar
+Missing required sub-command.
+Usage: <main class> [-hV] [COMMAND]
+  -h, --help      Show this help message and exit.
+  -V, --version   Print version information and exit.
+Commands:
+  backup-restore     Application for backup and restore of a Cassandra node.
+  cassandra-sidecar  Sidecar management application for Cassandra.
+----
+
+If you use `backup-restore`, you will have the same functionality as if you were using our backup / restore CLI.
+
+[source,bash]
+----
+$ java -jar cassandra-sidecar-1.0.0.jar backup-restore help
+Usage: <main class> backup-restore [-hV] [COMMAND]
+Application for backup and restore of a Cassandra node.
+  -h, --help      Show this help message and exit.
+  -V, --version   Print version information and exit.
+Commands:
+  backup             Take a snapshot of a Cassandra node and upload it to remote storage. Defaults to a snapshot of all
+                       keyspaces and their column families, but may be restricted to specific keyspaces or a single
+                       column-family.
+  restore            Restore the Cassandra data on this node to a specified point-in-time.
+  commitlog-backup   Upload archived commit logs to remote storage.
+  commitlog-restore  Restores archived commit logs to node.
+----
+
+On the other hand, if you use server mode, there will be HTTP REST server started.
+
+[source,bash]
+----
+$ java -jar cassandra-sidecar-1.0.0.jar cassandra-sidecar
+----
+
+=== REST interface
+
+Sidecar server application accepts JSON body. Each operation we want to do against Cassandra has corresponding JSON
+payload. In turn, sidecar takes this body and calls respective JMX method to invoke it.
+
+There are currently these operations:
+
+* cleanup
+* decommission
+* drain
+* flush
+* rebuild
+* refresh
+* restart
+* scrub
+* upgradesstables
+
+Lets say we want to execute flushing operation which flushes memtables into sstables. You have to send this
+payload to `http://127.0.0.1:4567/operations`
+
+[source,json]
+----
+{
+	"type": "flush",
+	"keyspace": "mykeyspace",
+	"tables": [
+	    "table1", "table2"
+	]
+}
+----
+
+=== Build
+
+[source,bash]
+----
+$ mvn clean install
+----
+
+By default, there is `singleNode` profile enabled which tests this Sidecar by invoking only operations which are
+isolated to one node only. The other profile is `multiNode` which is starting multiple embedded Cassandra instances.
+For example, a decomission test is a multiNode test. In order to successfully run `multiNode` tests,
+there has to be interface `127.0.0.2` available on the host.

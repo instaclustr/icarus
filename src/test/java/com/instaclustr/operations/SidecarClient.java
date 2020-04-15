@@ -1,12 +1,5 @@
 package com.instaclustr.operations;
 
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.Response;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,9 +9,15 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Set;
 import java.util.UUID;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.Response;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.CharStreams;
+
 import com.instaclustr.cassandra.backup.impl.backup.BackupOperation;
 import com.instaclustr.cassandra.backup.impl.backup.BackupOperationRequest;
 import com.instaclustr.cassandra.sidecar.operations.cleanup.CleanupOperation;
@@ -45,6 +44,8 @@ import org.awaitility.Awaitility;
 import org.awaitility.Duration;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.testng.Assert;
+
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 public class SidecarClient implements Closeable {
 
@@ -95,8 +96,12 @@ public class SidecarClient implements Closeable {
         return performOperationSubmission(operationRequest, DecommissionOperation.class);
     }
 
+    public OperationResult<DecommissionOperation> decommission(Boolean force) {
+        return decommission(new DecommissionOperationRequest(force));
+    }
+
     public OperationResult<DecommissionOperation> decommission() {
-        return decommission(new DecommissionOperationRequest());
+        return decommission(false);
     }
 
     public OperationResult<RebuildOperation> rebuild(final RebuildOperationRequest operationRequest) {

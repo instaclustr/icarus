@@ -1,26 +1,32 @@
 package com.instaclustr.cassandra.sidecar.operations.decommission;
 
-import javax.inject.Inject;
 import java.time.Instant;
 import java.util.UUID;
+import javax.inject.Inject;
+import javax.inject.Provider;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.inject.assistedinject.Assisted;
+import com.instaclustr.cassandra.CassandraVersion;
 import com.instaclustr.operations.FunctionWithEx;
 import com.instaclustr.operations.Operation;
 import jmx.org.apache.cassandra.service.CassandraJMXService;
-import jmx.org.apache.cassandra.service.StorageServiceMBean;
+import jmx.org.apache.cassandra.service.cassandra3.StorageServiceMBean;
+import jmx.org.apache.cassandra.service.cassandra4.Cassandra4StorageServiceMBean;
 
 public class DecommissionOperation extends Operation<DecommissionOperationRequest> {
     private final CassandraJMXService cassandraJMXService;
+    private final Provider<CassandraVersion> cassandraVersionProvider;
 
     @Inject
     public DecommissionOperation(final CassandraJMXService cassandraJMXService,
+                                 final Provider<CassandraVersion> cassandraVersionProvider,
                                  @Assisted final DecommissionOperationRequest request) {
         super(request);
 
         this.cassandraJMXService = cassandraJMXService;
+        this.cassandraVersionProvider = cassandraVersionProvider;
     }
 
     // this constructor is not meant to be instantiated manually
@@ -31,20 +37,35 @@ public class DecommissionOperation extends Operation<DecommissionOperationReques
                                   @JsonProperty("state") final State state,
                                   @JsonProperty("failureCause") final Throwable failureCause,
                                   @JsonProperty("progress") final float progress,
-                                  @JsonProperty("startTime") final Instant startTime) {
-        super(id, creationTime, state, failureCause, progress, startTime, new DecommissionOperationRequest());
+                                  @JsonProperty("startTime") final Instant startTime,
+                                  @JsonProperty("force") final Boolean force) {
+        super(id, creationTime, state, failureCause, progress, startTime, new DecommissionOperationRequest(force));
         cassandraJMXService = null;
+        cassandraVersionProvider = null;
     }
 
     @Override
     protected void run0() throws Exception {
         assert cassandraJMXService != null;
-        cassandraJMXService.doWithStorageServiceMBean(new FunctionWithEx<StorageServiceMBean, Void>() {
-            @Override
-            public Void apply(final StorageServiceMBean object) throws Exception {
-                object.decommission();
-                return null;
-            }
-        });
+
+        CassandraVersion cassandraVersion = cassandraVersionProvider.get();
+
+        if (cassandraVersion.getMajor() == 4) {
+            cassandraJMXService.doWithCassandra4StorageServiceMBean(new FunctionWithEx<Cassandra4StorageServiceMBean, Void>() {
+                @Override
+                public Void apply(final Cassandra4StorageServiceMBean object) throws Exception {
+                    object.decommission(request.force);
+                    return null;
+                }
+            });
+        } else {
+            cassandraJMXService.doWithStorageServiceMBean(new FunctionWithEx<StorageServiceMBean, Void>() {
+                @Override
+                public Void apply(final StorageServiceMBean object) throws Exception {
+                    object.decommission();
+                    return null;
+                }
+            });
+        }
     }
 }

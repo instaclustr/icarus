@@ -1,7 +1,5 @@
 package com.instaclustr.sidecar.embedded.multinode;
 
-import static org.testng.Assert.assertEquals;
-
 import java.nio.file.Files;
 import java.util.Map;
 import java.util.TreeMap;
@@ -13,6 +11,8 @@ import com.instaclustr.cassandra.sidecar.service.CassandraStatusService.Status.N
 import com.instaclustr.operations.SidecarClient;
 import com.instaclustr.sidecar.embedded.AbstractCassandraSidecarTest;
 import org.testng.annotations.Test;
+
+import static org.testng.Assert.assertEquals;
 
 public class DecommissionTest extends AbstractCassandraSidecarTest {
 
@@ -67,7 +67,7 @@ public class DecommissionTest extends AbstractCassandraSidecarTest {
         SidecarClient firstClient = sidecars.get("datacenter1").sidecarClient;
         SidecarClient secondClient = sidecars.get("datacenter2").sidecarClient;
 
-        secondClient.waitForCompleted(secondClient.decommission());
+        secondClient.waitForCompleted(secondClient.decommission(true));
 
         assertEquals(secondClient.getStatus().status.getNodeState(), NodeState.DECOMMISSIONED);
         assertEquals(firstClient.getStatus().status.getNodeState(), NodeState.NORMAL);

@@ -4,7 +4,7 @@ import com.google.inject.Inject;
 import com.instaclustr.cassandra.sidecar.service.CassandraStatusService.Status.NodeState;
 import com.instaclustr.operations.FunctionWithEx;
 import jmx.org.apache.cassandra.service.CassandraJMXService;
-import jmx.org.apache.cassandra.service.StorageServiceMBean;
+import jmx.org.apache.cassandra.service.cassandra3.StorageServiceMBean;
 
 public class CassandraStatusService {
 

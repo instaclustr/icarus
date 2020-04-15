@@ -12,7 +12,7 @@ import com.instaclustr.operations.FunctionWithEx;
 import com.instaclustr.operations.Operation;
 import com.instaclustr.operations.OperationFailureException;
 import jmx.org.apache.cassandra.service.CassandraJMXService;
-import jmx.org.apache.cassandra.service.StorageServiceMBean;
+import jmx.org.apache.cassandra.service.cassandra3.StorageServiceMBean;
 
 public class CleanupOperation extends Operation<CleanupOperationRequest> {
     private final CassandraJMXService cassandraJMXService;

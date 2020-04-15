@@ -41,7 +41,7 @@ import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Spec;
 
 @Command(name = "cassandra-sidecar",
-    description = "Sidecar management application for Apache Cassandra running on Kubernetes.",
+    description = "Sidecar management application for Cassandra.",
     versionProvider = Sidecar.class,
     sortOptions = false,
     usageHelpWidth = 128,

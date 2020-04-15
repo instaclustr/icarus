@@ -73,7 +73,7 @@ public class SidecarTest {
     void testOperationsService() throws InterruptedException {
 
         // create operation
-        final Response newOperation = operationsResource.createNewOperation(new DecommissionOperationRequest());
+        final Response newOperation = operationsResource.createNewOperation(new DecommissionOperationRequest(false));
 
         final UUID operationID = getOperationUUID(newOperation);
         assertNotNull(operationID);
