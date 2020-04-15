@@ -47,10 +47,9 @@ public class DecommissionOperation extends Operation<DecommissionOperationReques
     @Override
     protected void run0() throws Exception {
         assert cassandraJMXService != null;
+        assert cassandraVersionProvider != null;
 
-        CassandraVersion cassandraVersion = cassandraVersionProvider.get();
-
-        if (cassandraVersion.getMajor() == 4) {
+        if (cassandraVersionProvider.get().getMajor() == 4) {
             cassandraJMXService.doWithCassandra4StorageServiceMBean(new FunctionWithEx<Cassandra4StorageServiceMBean, Void>() {
                 @Override
                 public Void apply(final Cassandra4StorageServiceMBean object) throws Exception {

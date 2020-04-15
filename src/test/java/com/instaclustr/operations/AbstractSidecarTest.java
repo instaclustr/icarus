@@ -23,6 +23,8 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Module;
+import com.google.inject.Provider;
+import com.instaclustr.cassandra.CassandraVersion;
 import com.instaclustr.cassandra.service.CassandraWaiter;
 import com.instaclustr.cassandra.service.CqlSessionService;
 import com.instaclustr.cassandra.sidecar.Sidecar;
@@ -68,6 +70,7 @@ public abstract class AbstractSidecarTest {
                     final CassandraJMXService mock = mock(CassandraJMXService.class);
                     final CqlSessionService cqlSessionServiceMock = mock(CqlSessionService.class);
                     final CassandraWaiter cassandraWaiterMock = mock(CassandraWaiter.class);
+                    final CassandraVersion cassandraVersionMock = mock(CassandraVersion.class);
 
                     try {
 
@@ -77,6 +80,8 @@ public abstract class AbstractSidecarTest {
                                 return 0;
                             }
                         });
+
+                        when(cassandraVersionMock.getMajor()).thenReturn(3);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -84,6 +89,13 @@ public abstract class AbstractSidecarTest {
                     bind(CassandraJMXService.class).toInstance(mock);
                     bind(CqlSessionService.class).toInstance(cqlSessionServiceMock);
                     bind(CassandraWaiter.class).toInstance(cassandraWaiterMock);
+                    bind(CassandraVersion.class).toProvider(new Provider<CassandraVersion>()
+                    {
+                        public CassandraVersion get()
+                        {
+                            return cassandraVersionMock;
+                        }
+                    });
                 }
             });
             add(new JerseyHttpServerModule());

@@ -1,4 +1,4 @@
-BACKUP_RESTORE_DIR:=$(shell dirname $(realpath .))/cassandra-backup
+BACKUP_RESTORE_DIR := $(if $(BACKUP_RESTORE_DIR),$(BACKUP_RESTORE_DIR),$(shell dirname $(realpath .))/cassandra-backup)
 
 .PHONY: all
 all: docker
