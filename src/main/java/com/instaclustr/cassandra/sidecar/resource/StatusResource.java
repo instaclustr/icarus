@@ -1,7 +1,5 @@
 package com.instaclustr.cassandra.sidecar.resource;
 
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -10,6 +8,8 @@ import javax.ws.rs.core.Response;
 
 import com.instaclustr.cassandra.sidecar.service.CassandraStatusService;
 import com.instaclustr.cassandra.sidecar.service.CassandraStatusService.Status;
+
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Path("/status")
 @Produces(APPLICATION_JSON)

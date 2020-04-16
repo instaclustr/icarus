@@ -1,11 +1,12 @@
 package com.instaclustr.cassandra.sidecar.operations.flush;
 
-import javax.validation.constraints.NotNull;
 import java.util.Set;
+import javax.validation.constraints.NotNull;
+
+import com.google.common.base.MoreObjects;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.MoreObjects;
 import com.instaclustr.operations.OperationRequest;
 
 public class FlushOperationRequest extends OperationRequest {

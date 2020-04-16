@@ -1,11 +1,11 @@
 package com.instaclustr.cassandra.sidecar.resource;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Response;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 
 @Path("/config")
 @Produces("application/yaml")

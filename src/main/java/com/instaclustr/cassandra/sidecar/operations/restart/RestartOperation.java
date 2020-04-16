@@ -3,6 +3,9 @@ package com.instaclustr.cassandra.sidecar.operations.restart;
 import java.time.Instant;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.inject.Inject;
@@ -20,8 +23,6 @@ import com.instaclustr.operations.OperationFailureException;
 import io.kubernetes.client.Exec;
 import io.kubernetes.client.apis.CoreV1Api;
 import jmx.org.apache.cassandra.service.CassandraJMXService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class RestartOperation extends Operation<RestartOperationRequest> {
 

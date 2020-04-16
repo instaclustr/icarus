@@ -1,15 +1,18 @@
 package com.instaclustr.cassandra.sidecar.operations.upgradesstables;
 
+import java.util.Set;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
-import java.util.Set;
+
+import com.google.common.base.MoreObjects;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.MoreObjects;
 import com.instaclustr.operations.OperationRequest;
 
 /**
+ * <pre>
+ * {@code
  * $ nodetool help upgradesstables
  * NAME
  *         nodetool upgradesstables - Rewrite sstables (for the requested tables)
@@ -55,6 +58,7 @@ import com.instaclustr.operations.OperationRequest;
  *
  *         [<keyspace> <tables>...]
  *             The keyspace followed by one or many tables
+ * }</pre>
  */
 public class UpgradeSSTablesOperationRequest extends OperationRequest {
 

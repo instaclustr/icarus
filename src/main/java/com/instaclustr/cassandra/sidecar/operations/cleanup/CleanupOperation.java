@@ -1,9 +1,9 @@
 package com.instaclustr.cassandra.sidecar.operations.cleanup;
 
-import javax.inject.Inject;
 import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
+import javax.inject.Inject;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;

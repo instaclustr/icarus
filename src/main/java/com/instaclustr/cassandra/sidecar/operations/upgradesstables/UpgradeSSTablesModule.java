@@ -1,8 +1,8 @@
 package com.instaclustr.cassandra.sidecar.operations.upgradesstables;
 
-import static com.instaclustr.operations.OperationBindings.installOperationBindings;
-
 import com.google.inject.AbstractModule;
+
+import static com.instaclustr.operations.OperationBindings.installOperationBindings;
 
 public class UpgradeSSTablesModule extends AbstractModule {
     @Override

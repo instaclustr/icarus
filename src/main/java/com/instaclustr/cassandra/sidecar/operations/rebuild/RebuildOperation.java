@@ -1,8 +1,5 @@
 package com.instaclustr.cassandra.sidecar.operations.rebuild;
 
-import static java.lang.String.format;
-import static java.util.stream.Collectors.joining;
-
 import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
@@ -15,6 +12,9 @@ import com.instaclustr.operations.FunctionWithEx;
 import com.instaclustr.operations.Operation;
 import jmx.org.apache.cassandra.service.CassandraJMXService;
 import jmx.org.apache.cassandra.service.cassandra3.StorageServiceMBean;
+
+import static java.lang.String.format;
+import static java.util.stream.Collectors.joining;
 
 public class RebuildOperation extends Operation<RebuildOperationRequest> {
 

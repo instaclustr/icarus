@@ -1,14 +1,11 @@
 package com.instaclustr.cassandra.sidecar.operations.drain;
 
-import static com.instaclustr.cassandra.sidecar.service.CassandraStatusService.Status.NodeState.DRAINED;
-import static com.instaclustr.cassandra.sidecar.service.CassandraStatusService.Status.NodeState.DRAINING;
-import static com.instaclustr.cassandra.sidecar.service.CassandraStatusService.Status.NodeState.NORMAL;
-import static java.lang.String.format;
-import static org.awaitility.Awaitility.await;
-
 import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -21,8 +18,12 @@ import com.instaclustr.operations.Operation;
 import com.instaclustr.operations.OperationFailureException;
 import jmx.org.apache.cassandra.service.CassandraJMXService;
 import jmx.org.apache.cassandra.service.cassandra3.StorageServiceMBean;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import static com.instaclustr.cassandra.sidecar.service.CassandraStatusService.Status.NodeState.DRAINED;
+import static com.instaclustr.cassandra.sidecar.service.CassandraStatusService.Status.NodeState.DRAINING;
+import static com.instaclustr.cassandra.sidecar.service.CassandraStatusService.Status.NodeState.NORMAL;
+import static java.lang.String.format;
+import static org.awaitility.Awaitility.await;
 
 public class DrainOperation extends Operation<DrainOperationRequest> {
 

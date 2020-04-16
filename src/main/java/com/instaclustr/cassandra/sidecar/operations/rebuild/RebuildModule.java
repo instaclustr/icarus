@@ -1,8 +1,8 @@
 package com.instaclustr.cassandra.sidecar.operations.rebuild;
 
-import static com.instaclustr.operations.OperationBindings.installOperationBindings;
-
 import com.google.inject.AbstractModule;
+
+import static com.instaclustr.operations.OperationBindings.installOperationBindings;
 
 public class RebuildModule extends AbstractModule {
     @Override

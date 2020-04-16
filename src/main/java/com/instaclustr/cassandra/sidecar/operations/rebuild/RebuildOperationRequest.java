@@ -1,14 +1,17 @@
 package com.instaclustr.cassandra.sidecar.operations.rebuild;
 
-import javax.validation.constraints.NotEmpty;
 import java.util.Set;
+import javax.validation.constraints.NotEmpty;
+
+import com.google.common.base.MoreObjects;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.MoreObjects;
 import com.instaclustr.operations.OperationRequest;
 
 /**
+ * <pre>
+ * {@code
  * $ nodetool help rebuild
  * NAME
  *         nodetool rebuild - Rebuild data by streaming from other nodes (similarly
@@ -59,6 +62,7 @@ import com.instaclustr.operations.OperationRequest;
  *         <src-dc-name>
  *             Name of DC from which to select sources for streaming. By default,
  *             pick any DC
+ * }</pre>
  */
 @ValidRebuildOperationRequest
 public class RebuildOperationRequest extends OperationRequest {

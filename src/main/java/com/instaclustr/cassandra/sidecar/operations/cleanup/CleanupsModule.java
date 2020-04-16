@@ -1,9 +1,9 @@
 package com.instaclustr.cassandra.sidecar.operations.cleanup;
 
 
-import static com.instaclustr.operations.OperationBindings.installOperationBindings;
-
 import com.google.inject.AbstractModule;
+
+import static com.instaclustr.operations.OperationBindings.installOperationBindings;
 
 public class CleanupsModule extends AbstractModule {
 

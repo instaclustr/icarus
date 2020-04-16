@@ -4,6 +4,9 @@ import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.inject.Inject;
@@ -13,8 +16,6 @@ import com.instaclustr.operations.Operation;
 import com.instaclustr.operations.OperationFailureException;
 import jmx.org.apache.cassandra.service.CassandraJMXService;
 import jmx.org.apache.cassandra.service.cassandra3.StorageServiceMBean;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class UpgradeSSTablesOperation extends Operation<UpgradeSSTablesOperationRequest> {
 

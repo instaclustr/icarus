@@ -2,12 +2,15 @@ package com.instaclustr.cassandra.sidecar.operations.refresh;
 
 import javax.validation.constraints.NotEmpty;
 
+import com.google.common.base.MoreObjects;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.MoreObjects;
 import com.instaclustr.operations.OperationRequest;
 
 /**
+ * <pre>
+ * {@code
  * NAME
  *         nodetool refresh - Load newly placed SSTables to the system without
  *         restart
@@ -45,6 +48,7 @@ import com.instaclustr.operations.OperationRequest;
  *
  *         <keyspace> <table>
  *             The keyspace and table name
+ * }</pre>
  */
 public class RefreshOperationRequest extends OperationRequest {
 

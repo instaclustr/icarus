@@ -1,8 +1,5 @@
 package com.instaclustr.cassandra.sidecar;
 
-import static com.google.inject.Guice.createInjector;
-import static com.google.inject.Stage.PRODUCTION;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -39,6 +36,9 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Spec;
+
+import static com.google.inject.Guice.createInjector;
+import static com.google.inject.Stage.PRODUCTION;
 
 @Command(name = "cassandra-sidecar",
     description = "Sidecar management application for Cassandra.",
