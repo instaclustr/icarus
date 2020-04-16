@@ -5,6 +5,9 @@ import java.util.UUID;
 import javax.inject.Inject;
 import javax.inject.Provider;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.inject.assistedinject.Assisted;
@@ -16,6 +19,7 @@ import jmx.org.apache.cassandra.service.cassandra3.StorageServiceMBean;
 import jmx.org.apache.cassandra.service.cassandra4.Cassandra4StorageServiceMBean;
 
 public class DecommissionOperation extends Operation<DecommissionOperationRequest> {
+    private static final Logger logger = LoggerFactory.getLogger(DecommissionOperation.class);
     private final CassandraJMXService cassandraJMXService;
     private final Provider<CassandraVersion> cassandraVersionProvider;
 
@@ -53,7 +57,7 @@ public class DecommissionOperation extends Operation<DecommissionOperationReques
             cassandraJMXService.doWithCassandra4StorageServiceMBean(new FunctionWithEx<Cassandra4StorageServiceMBean, Void>() {
                 @Override
                 public Void apply(final Cassandra4StorageServiceMBean object) throws Exception {
-                    object.decommission(request.force);
+                    object.decommission(request.force == null ? true : request.force);
                     return null;
                 }
             });
