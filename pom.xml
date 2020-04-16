@@ -33,6 +33,9 @@
 
     <inceptionYear>2019</inceptionYear>
 
+    <description>Sidecar for Apache Cassandra</description>
+    <url>https://github.com/instaclustr/cassandra-sidecar</url>
+
     <licenses>
         <license>
             <name>The Apache License, Version 2.0</name>
