@@ -31,6 +31,43 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
+    <inceptionYear>2019</inceptionYear>
+
+    <licenses>
+        <license>
+            <name>The Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Various</name>
+            <organization>Instaclustr</organization>
+            <organizationUrl>https://www.instaclustr.com</organizationUrl>
+        </developer>
+    </developers>
+
+    <organization>
+        <name>Instaclustr</name>
+        <url>https://instaclustr.com</url>
+    </organization>
+
+    <scm>
+        <connection>scm:git:git://git@github.com:instaclustr/cassandra-sidecar.git
+        </connection>
+        <developerConnection>scm:git:ssh://github.com/instaclustr/cassandra-sidecar.git
+        </developerConnection>
+        <url>git://github.com/instaclustr/cassandra-sidecar.git</url>
+    </scm>
+
+    <distributionManagement>
+        <repository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
+
     <dependencies>
         <dependency>
             <groupId>com.instaclustr</groupId>
