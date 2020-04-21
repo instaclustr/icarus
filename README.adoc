@@ -92,3 +92,5 @@ By default, there is `singleNode` profile enabled which tests this Sidecar by in
 isolated to one node only. The other profile is `multiNode` which is starting multiple embedded Cassandra instances.
 For example, a decomission test is a multiNode test. In order to successfully run `multiNode` tests,
 there has to be interface `127.0.0.2` available on the host.
+
+Please see https://www.instaclustr.com/support/documentation/announcements/instaclustr-open-source-project-status/ for Instaclustr support status of this project
