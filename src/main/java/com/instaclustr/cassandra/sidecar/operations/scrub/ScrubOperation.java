@@ -4,9 +4,6 @@ import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.inject.Inject;
@@ -16,6 +13,8 @@ import com.instaclustr.operations.Operation;
 import com.instaclustr.operations.OperationFailureException;
 import jmx.org.apache.cassandra.service.CassandraJMXService;
 import jmx.org.apache.cassandra.service.cassandra3.StorageServiceMBean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ScrubOperation extends Operation<ScrubOperationRequest> {
 
@@ -34,7 +33,8 @@ public class ScrubOperation extends Operation<ScrubOperationRequest> {
     // this constructor is not meant to be instantiated manually
     // and it fulfills the purpose of deserialisation from JSON string to an Operation object, currently just for testing purposes
     @JsonCreator
-    private ScrubOperation(@JsonProperty("id") final UUID id,
+    private ScrubOperation(@JsonProperty("type") final String type,
+                           @JsonProperty("id") final UUID id,
                            @JsonProperty("creationTime") final Instant creationTime,
                            @JsonProperty("state") final State state,
                            @JsonProperty("failureCause") final Throwable failureCause,
@@ -47,8 +47,14 @@ public class ScrubOperation extends Operation<ScrubOperationRequest> {
                            @JsonProperty("jobs") final int jobs,
                            @JsonProperty("keyspace") final String keyspace,
                            @JsonProperty("tables") final Set<String> tables) {
-        super(id, creationTime, state, failureCause, progress, startTime,
-              new ScrubOperationRequest(disableSnapshot, skipCorrupted, noValidate, reinsertOverflowedTTL, jobs, keyspace, tables));
+        super(type, id, creationTime, state, failureCause, progress, startTime, new ScrubOperationRequest(type,
+                                                                                                          disableSnapshot,
+                                                                                                          skipCorrupted,
+                                                                                                          noValidate,
+                                                                                                          reinsertOverflowedTTL,
+                                                                                                          jobs,
+                                                                                                          keyspace,
+                                                                                                          tables));
         cassandraJMXService = null;
     }
 

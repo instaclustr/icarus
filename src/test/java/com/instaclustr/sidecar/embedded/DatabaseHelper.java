@@ -3,6 +3,8 @@ package com.instaclustr.sidecar.embedded;
 import static com.datastax.oss.driver.api.core.type.DataTypes.TEXT;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.insertInto;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.literal;
+import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.selectFrom;
+import static java.lang.String.format;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -15,20 +17,24 @@ import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.github.nosan.embedded.cassandra.api.Cassandra;
 import com.github.nosan.embedded.cassandra.api.connection.CqlSessionCassandraConnectionFactory;
 import com.instaclustr.cassandra.sidecar.operations.flush.FlushOperationRequest;
-import com.instaclustr.operations.SidecarClient;
-import com.instaclustr.sidecar.embedded.AbstractCassandraSidecarTest.SidecarPair;
+import com.instaclustr.cassandra.sidecar.rest.SidecarClient;
+import com.instaclustr.sidecar.embedded.AbstractCassandraSidecarTest.SidecarHolder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DatabaseHelper {
+
+    private static final Logger logger = LoggerFactory.getLogger(DatabaseHelper.class);
 
     private static final String defaultDC = "datacenter1";
 
     private final Map<String, Cassandra> nodes;
-    private final Map<String, SidecarPair> sidecarClients;
+    private final Map<String, SidecarHolder> sidecarClients;
 
     private Cassandra currentNode;
     private SidecarClient currentClient;
 
-    public DatabaseHelper(Map<String, Cassandra> nodes, Map<String, SidecarPair> sidecarClients) {
+    public DatabaseHelper(Map<String, Cassandra> nodes, Map<String, SidecarHolder> sidecarClients) {
         this.nodes = nodes;
         this.sidecarClients = sidecarClients;
         switchHelper(defaultDC);
@@ -61,10 +67,10 @@ public class DatabaseHelper {
     public void createTable(String keyspace, String table) {
         try (CqlSession session = new CqlSessionCassandraConnectionFactory().create(currentNode).getConnection()) {
             session.execute(SchemaBuilder.createTable(keyspace, table)
-                                .ifNotExists()
-                                .withPartitionKey("id", TEXT)
-                                .withColumn("name", TEXT)
-                                .build());
+                                         .ifNotExists()
+                                         .withPartitionKey("id", TEXT)
+                                         .withColumn("name", TEXT)
+                                         .build());
         }
     }
 
@@ -86,16 +92,22 @@ public class DatabaseHelper {
         }
     }
 
-    public void addData(String keyspaceName, String tableName) {
-        addData(keyspaceName, tableName, UUID.randomUUID().toString());
+    public void addData(int records, String keyspace, String table) {
+        for (int i = 0; i < records; i++) {
+            addData(keyspace, table, UUID.randomUUID().toString());
+        }
+    }
+
+    public void addData(String keyspace, String table) {
+        addData(1, keyspace, table);
     }
 
     public void addData(String keyspaceName, String tableName, String primaryKey) {
         try (CqlSession session = new CqlSessionCassandraConnectionFactory().create(currentNode).getConnection()) {
             session.execute(insertInto(keyspaceName, tableName)
-                                .value("id", literal(primaryKey))
-                                .value("name", literal("stefan1"))
-                                .build());
+                                    .value("id", literal(primaryKey))
+                                    .value("name", literal("stefan1"))
+                                    .build());
         }
     }
 
@@ -106,5 +118,13 @@ public class DatabaseHelper {
     public void addDataAndFlush(String keyspaceName, String tableName, String primaryKey) {
         addData(keyspaceName, tableName, primaryKey);
         currentClient.waitForCompleted(currentClient.flush(new FlushOperationRequest(keyspaceName, Collections.singleton(tableName))));
+    }
+
+    public void dump(String keyspace, String table) {
+        try (CqlSession session = new CqlSessionCassandraConnectionFactory().create(currentNode).getConnection()) {
+            session.execute(selectFrom(keyspace, table).all().build()).all().forEach(row -> {
+                logger.info(format("id: %s, name: %s", row.getString("id"), row.getString("name")));
+            });
+        }
     }
 }

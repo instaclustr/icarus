@@ -3,9 +3,6 @@ package com.instaclustr.cassandra.sidecar.operations.restart;
 import java.time.Instant;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.inject.Inject;
@@ -23,6 +20,8 @@ import com.instaclustr.operations.OperationFailureException;
 import io.kubernetes.client.Exec;
 import io.kubernetes.client.apis.CoreV1Api;
 import jmx.org.apache.cassandra.service.CassandraJMXService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RestartOperation extends Operation<RestartOperationRequest> {
 
@@ -52,13 +51,14 @@ public class RestartOperation extends Operation<RestartOperationRequest> {
     // this constructor is not meant to be instantiated manually
     // and it fulfills the purpose of deserialisation from JSON string to an Operation object, currently just for testing purposes
     @JsonCreator
-    private RestartOperation(@JsonProperty("id") final UUID id,
+    private RestartOperation(@JsonProperty("type") final String type,
+                             @JsonProperty("id") final UUID id,
                              @JsonProperty("creationTime") final Instant creationTime,
                              @JsonProperty("state") final State state,
                              @JsonProperty("failureCause") final Throwable failureCause,
                              @JsonProperty("progress") final float progress,
                              @JsonProperty("startTime") final Instant startTime) {
-        super(id, creationTime, state, failureCause, progress, startTime, new RestartOperationRequest());
+        super(type, id, creationTime, state, failureCause, progress, startTime, new RestartOperationRequest(type));
         this.cassandraJMXService = null;
         this.statusService = null;
         this.coreV1ApiProvider = null;

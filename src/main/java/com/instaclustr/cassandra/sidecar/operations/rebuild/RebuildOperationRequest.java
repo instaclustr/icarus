@@ -1,12 +1,11 @@
 package com.instaclustr.cassandra.sidecar.operations.rebuild;
 
-import java.util.Set;
 import javax.validation.constraints.NotEmpty;
-
-import com.google.common.base.MoreObjects;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.MoreObjects;
 import com.instaclustr.operations.OperationRequest;
 
 /**
@@ -73,7 +72,8 @@ public class RebuildOperationRequest extends OperationRequest {
     public final Set<String> specificSources;
 
     @JsonCreator
-    public RebuildOperationRequest(@JsonProperty("sourceDC") final String sourceDC,
+    public RebuildOperationRequest(@JsonProperty("type") final String type,
+                                   @JsonProperty("sourceDC") final String sourceDC,
                                    @JsonProperty("keyspace") final String keyspace,
                                    @JsonProperty("specificTokens") final Set<TokenRange> specificTokens,
                                    @JsonProperty("specificSources") final Set<String> specificSources) {
@@ -81,6 +81,7 @@ public class RebuildOperationRequest extends OperationRequest {
         this.keyspace = keyspace;
         this.specificTokens = specificTokens;
         this.specificSources = specificSources;
+        this.type = type;
     }
 
     public static final class TokenRange {
@@ -101,19 +102,19 @@ public class RebuildOperationRequest extends OperationRequest {
         @Override
         public String toString() {
             return MoreObjects.toStringHelper(TokenRange.this)
-                    .add("start", start)
-                    .add("end", end)
-                    .toString();
+                              .add("start", start)
+                              .add("end", end)
+                              .toString();
         }
     }
 
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
-                .add("keyspace", keyspace)
-                .add("sourceDC", sourceDC)
-                .add("specificTokens", specificTokens)
-                .add("specificSources", specificSources)
-                .toString();
+                          .add("keyspace", keyspace)
+                          .add("sourceDC", sourceDC)
+                          .add("specificTokens", specificTokens)
+                          .add("specificSources", specificSources)
+                          .toString();
     }
 }

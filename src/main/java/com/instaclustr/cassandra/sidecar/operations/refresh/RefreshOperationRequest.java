@@ -2,10 +2,9 @@ package com.instaclustr.cassandra.sidecar.operations.refresh;
 
 import javax.validation.constraints.NotEmpty;
 
-import com.google.common.base.MoreObjects;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.MoreObjects;
 import com.instaclustr.operations.OperationRequest;
 
 /**
@@ -58,18 +57,24 @@ public class RefreshOperationRequest extends OperationRequest {
     @NotEmpty
     public final String table;
 
+    public RefreshOperationRequest(@NotEmpty final String keyspace, @NotEmpty final String table) {
+        this("refresh", keyspace, table);
+    }
+
     @JsonCreator
-    public RefreshOperationRequest(@JsonProperty("keyspace") final String keyspace,
+    public RefreshOperationRequest(@JsonProperty("type") final String type,
+                                   @JsonProperty("keyspace") final String keyspace,
                                    @JsonProperty("table") final String table) {
         this.keyspace = keyspace;
         this.table = table;
+        this.type = "refresh";
     }
 
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
-            .add("keyspace", keyspace)
-            .add("table", table)
-            .toString();
+                          .add("keyspace", keyspace)
+                          .add("table", table)
+                          .toString();
     }
 }

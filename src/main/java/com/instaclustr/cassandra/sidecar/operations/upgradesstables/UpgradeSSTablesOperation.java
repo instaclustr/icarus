@@ -4,9 +4,6 @@ import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.inject.Inject;
@@ -16,6 +13,8 @@ import com.instaclustr.operations.Operation;
 import com.instaclustr.operations.OperationFailureException;
 import jmx.org.apache.cassandra.service.CassandraJMXService;
 import jmx.org.apache.cassandra.service.cassandra3.StorageServiceMBean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class UpgradeSSTablesOperation extends Operation<UpgradeSSTablesOperationRequest> {
 
@@ -34,7 +33,8 @@ public class UpgradeSSTablesOperation extends Operation<UpgradeSSTablesOperation
     // this constructor is not meant to be instantiated manually
     // and it fulfills the purpose of deserialisation from JSON string to an Operation object, currently just for testing purposes
     @JsonCreator
-    private UpgradeSSTablesOperation(@JsonProperty("id") final UUID id,
+    private UpgradeSSTablesOperation(@JsonProperty("type") final String type,
+                                     @JsonProperty("id") final UUID id,
                                      @JsonProperty("creationTime") final Instant creationTime,
                                      @JsonProperty("state") final State state,
                                      @JsonProperty("failureCause") final Throwable failureCause,
@@ -44,8 +44,11 @@ public class UpgradeSSTablesOperation extends Operation<UpgradeSSTablesOperation
                                      @JsonProperty("tables") final Set<String> tables,
                                      @JsonProperty("includeAllSStables") final boolean includeAllSStables,
                                      @JsonProperty("jobs") final int jobs) {
-        super(id, creationTime, state, failureCause, progress, startTime,
-              new UpgradeSSTablesOperationRequest(keyspace, tables, includeAllSStables, jobs));
+        super(type, id, creationTime, state, failureCause, progress, startTime, new UpgradeSSTablesOperationRequest(type,
+                                                                                                                    keyspace,
+                                                                                                                    tables,
+                                                                                                                    includeAllSStables,
+                                                                                                                    jobs));
         cassandraJMXService = null;
     }
 
@@ -80,10 +83,10 @@ public class UpgradeSSTablesOperation extends Operation<UpgradeSSTablesOperation
         switch (result) {
             case 1:
                 throw new OperationFailureException("Aborted upgrading sstables for at least one table in keyspace " + request.keyspace
-                                                        + ", check server logs for more information.");
+                                                            + ", check server logs for more information.");
             case 2:
                 throw new OperationFailureException("Failed marking some sstables compacting in keyspace " + request.keyspace +
-                                                        ", check server logs for more information\"");
+                                                            ", check server logs for more information\"");
         }
     }
 }

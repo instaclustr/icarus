@@ -1,5 +1,8 @@
 package com.instaclustr.cassandra.sidecar.operations.rebuild;
 
+import static java.lang.String.format;
+import static java.util.stream.Collectors.joining;
+
 import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
@@ -12,9 +15,6 @@ import com.instaclustr.operations.FunctionWithEx;
 import com.instaclustr.operations.Operation;
 import jmx.org.apache.cassandra.service.CassandraJMXService;
 import jmx.org.apache.cassandra.service.cassandra3.StorageServiceMBean;
-
-import static java.lang.String.format;
-import static java.util.stream.Collectors.joining;
 
 public class RebuildOperation extends Operation<RebuildOperationRequest> {
 
@@ -30,7 +30,8 @@ public class RebuildOperation extends Operation<RebuildOperationRequest> {
     // this constructor is not meant to be instantiated manually
     // and it fulfills the purpose of deserialisation from JSON string to an Operation object, currently just for testing purposes
     @JsonCreator
-    private RebuildOperation(@JsonProperty("id") final UUID id,
+    private RebuildOperation(@JsonProperty("type") final String type,
+                             @JsonProperty("id") final UUID id,
                              @JsonProperty("creationTime") final Instant creationTime,
                              @JsonProperty("state") final State state,
                              @JsonProperty("failureCause") final Throwable failureCause,
@@ -40,7 +41,11 @@ public class RebuildOperation extends Operation<RebuildOperationRequest> {
                              @JsonProperty("keyspace") final String keyspace,
                              @JsonProperty("specificTokens") final Set<RebuildOperationRequest.TokenRange> specificTokens,
                              @JsonProperty("specificSources") final Set<String> specificSources) {
-        super(id, creationTime, state, failureCause, progress, startTime, new RebuildOperationRequest(sourceDC, keyspace, specificTokens, specificSources));
+        super(type, id, creationTime, state, failureCause, progress, startTime, new RebuildOperationRequest(type,
+                                                                                                            sourceDC,
+                                                                                                            keyspace,
+                                                                                                            specificTokens,
+                                                                                                            specificSources));
         cassandraJMXService = null;
     }
 

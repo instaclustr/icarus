@@ -1,5 +1,8 @@
 package com.instaclustr.cassandra.sidecar;
 
+import static com.google.inject.Guice.createInjector;
+import static com.google.inject.Stage.PRODUCTION;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -8,10 +11,13 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
 import com.instaclustr.cassandra.CassandraModule;
 import com.instaclustr.cassandra.backup.guice.StorageModules;
+import com.instaclustr.cassandra.backup.impl._import.ImportModule;
 import com.instaclustr.cassandra.backup.impl.backup.BackupModules.BackupModule;
 import com.instaclustr.cassandra.backup.impl.backup.BackupModules.CommitlogBackupModule;
+import com.instaclustr.cassandra.backup.impl.restore.RestoreModules.RestorationStrategyModule;
 import com.instaclustr.cassandra.backup.impl.restore.RestoreModules.RestoreCommitlogModule;
 import com.instaclustr.cassandra.backup.impl.restore.RestoreModules.RestoreModule;
+import com.instaclustr.cassandra.backup.impl.truncate.TruncateModule;
 import com.instaclustr.cassandra.sidecar.operations.cleanup.CleanupsModule;
 import com.instaclustr.cassandra.sidecar.operations.decommission.DecommissioningModule;
 import com.instaclustr.cassandra.sidecar.operations.drain.DrainModule;
@@ -37,15 +43,12 @@ import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Spec;
 
-import static com.google.inject.Guice.createInjector;
-import static com.google.inject.Stage.PRODUCTION;
-
 @Command(name = "cassandra-sidecar",
-    description = "Sidecar management application for Cassandra.",
-    versionProvider = Sidecar.class,
-    sortOptions = false,
-    usageHelpWidth = 128,
-    mixinStandardHelpOptions = true
+         description = "Sidecar management application for Cassandra.",
+         versionProvider = Sidecar.class,
+         sortOptions = false,
+         usageHelpWidth = 128,
+         mixinStandardHelpOptions = true
 )
 public final class Sidecar extends CLIApplication implements Callable<Void> {
 
@@ -113,22 +116,12 @@ public final class Sidecar extends CLIApplication implements Callable<Void> {
             add(new OperationsModule(sidecarSpec.operationsExpirationPeriod));
             add(new ExecutorsModule());
             add(new ServicesModule());
-        }};
-    }
-
-    public List<AbstractModule> sidecarModules() throws Exception {
-        return new ArrayList<AbstractModule>() {{
-            add(new VersionModule(getVersion()));
-            add(new ServiceManagerModule());
-            add(new CassandraModule(new CassandraJMXConnectionInfo(jmxSpec.jmxPassword,
-                                                                   jmxSpec.jmxUser,
-                                                                   jmxSpec.jmxServiceURL,
-                                                                   jmxSpec.trustStore,
-                                                                   jmxSpec.trustStorePassword)));
-            add(new JerseyHttpServerModule(sidecarSpec.httpServerAddress));
-            add(new OperationsModule(sidecarSpec.operationsExpirationPeriod));
-            add(new ExecutorsModule());
-            add(new ServicesModule());
+            add(new AbstractModule() {
+                @Override
+                protected void configure() {
+                    bind(SidecarSpec.class).toInstance(sidecarSpec);
+                }
+            });
         }};
     }
 
@@ -139,6 +132,7 @@ public final class Sidecar extends CLIApplication implements Callable<Void> {
             add(new CommitlogBackupModule());
             add(new RestoreModule());
             add(new RestoreCommitlogModule());
+            add(new RestorationStrategyModule());
         }};
     }
 
@@ -153,6 +147,8 @@ public final class Sidecar extends CLIApplication implements Callable<Void> {
             add(new RestartModule());
             add(new RefreshModule());
             add(new FlushModule());
+            add(new TruncateModule());
+            add(new ImportModule());
         }};
     }
 }

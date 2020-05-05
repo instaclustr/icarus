@@ -3,9 +3,6 @@ package com.instaclustr.cassandra.sidecar.operations.refresh;
 import java.time.Instant;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.inject.Inject;
@@ -14,6 +11,8 @@ import com.instaclustr.operations.FunctionWithEx;
 import com.instaclustr.operations.Operation;
 import jmx.org.apache.cassandra.service.CassandraJMXService;
 import jmx.org.apache.cassandra.service.cassandra3.StorageServiceMBean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RefreshOperation extends Operation<RefreshOperationRequest> {
 
@@ -32,7 +31,8 @@ public class RefreshOperation extends Operation<RefreshOperationRequest> {
     // this constructor is not meant to be instantiated manually
     // and it fulfills the purpose of deserialisation from JSON string to an Operation object, currently just for testing purposes
     @JsonCreator
-    private RefreshOperation(@JsonProperty("id") final UUID id,
+    private RefreshOperation(@JsonProperty("type") final String type,
+                             @JsonProperty("id") final UUID id,
                              @JsonProperty("creationTime") final Instant creationTime,
                              @JsonProperty("state") final State state,
                              @JsonProperty("failureCause") final Throwable failureCause,
@@ -40,7 +40,9 @@ public class RefreshOperation extends Operation<RefreshOperationRequest> {
                              @JsonProperty("startTime") final Instant startTime,
                              @JsonProperty("keyspace") final String keyspace,
                              @JsonProperty("table") final String table) {
-        super(id, creationTime, state, failureCause, progress, startTime, new RefreshOperationRequest(keyspace, table));
+        super(type, id, creationTime, state, failureCause, progress, startTime, new RefreshOperationRequest(type,
+                                                                                                            keyspace,
+                                                                                                            table));
         cassandraJMXService = null;
     }
 

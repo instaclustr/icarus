@@ -19,8 +19,10 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.TypeLiteral;
+import com.instaclustr.cassandra.sidecar.operations.decommission.DecommissionOperation;
 import com.instaclustr.cassandra.sidecar.operations.decommission.DecommissionOperationRequest;
 import com.instaclustr.sidecar.operations.OperationsResource;
+import com.instaclustr.threading.ExecutorsModule;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
@@ -53,18 +55,26 @@ public class SidecarTest {
             put(DecommissionOperationRequest.class, (OperationFactory<DecommissionOperationRequest>) request -> new TestingDecommissionOperation(request, operationCountDownLatch));
         }};
 
+        final Map<String, Class<? extends OperationRequest>> typeMappings = new HashMap<String, Class<? extends OperationRequest>>() {{
+           put("decommission", DecommissionOperationRequest.class);
+        }};
+
         final TypeLiteral<Map<Class<? extends OperationRequest>, OperationFactory>> classType = new TypeLiteral<Map<Class<? extends OperationRequest>, OperationFactory>>() {
         };
 
+        final TypeLiteral<Map<String, Class<? extends OperationRequest>>> map = new TypeLiteral<Map<String, Class<? extends OperationRequest>>>() {
+        };
+
         final Injector injector = Guice.createInjector(
-            new OperationsModule(3600),
-            new AbstractModule() {
-                @Override
-                protected void configure() {
-                    bind(classType).toInstance(typeMap);
-                }
-            }
-        );
+                new OperationsModule(3600),
+                new ExecutorsModule(),
+                new AbstractModule() {
+                    @Override
+                    protected void configure() {
+                        bind(classType).toInstance(typeMap);
+                        bind(map).toInstance(typeMappings);
+                    }
+                });
 
         injector.injectMembers(this);
     }

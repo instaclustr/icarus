@@ -32,14 +32,15 @@ public class DecommissionOperation extends Operation<DecommissionOperationReques
     // this constructor is not meant to be instantiated manually
     // and it fulfills the purpose of deserialisation from JSON string to an Operation object, currently just for testing purposes
     @JsonCreator
-    private DecommissionOperation(@JsonProperty("id") final UUID id,
+    private DecommissionOperation(@JsonProperty("type") final String type,
+                                  @JsonProperty("id") final UUID id,
                                   @JsonProperty("creationTime") final Instant creationTime,
                                   @JsonProperty("state") final State state,
                                   @JsonProperty("failureCause") final Throwable failureCause,
                                   @JsonProperty("progress") final float progress,
                                   @JsonProperty("startTime") final Instant startTime,
                                   @JsonProperty("force") final Boolean force) {
-        super(id, creationTime, state, failureCause, progress, startTime, new DecommissionOperationRequest(force));
+        super(type, id, creationTime, state, failureCause, progress, startTime, new DecommissionOperationRequest(type, force));
         cassandraJMXService = null;
         cassandraVersionProvider = null;
     }

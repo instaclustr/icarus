@@ -19,6 +19,8 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import com.instaclustr.cassandra.sidecar.operations.rebuild.RebuildOperationRequest;
+import com.instaclustr.cassandra.sidecar.rest.SidecarClient;
+import com.instaclustr.cassandra.sidecar.rest.SidecarClient.OperationResult;
 import org.apache.commons.lang3.tuple.Pair;
 import org.glassfish.jersey.server.validation.ValidationError;
 import org.testng.annotations.Test;
@@ -28,12 +30,13 @@ public class OperationsValidationTest extends AbstractSidecarTest {
     @Test
     public void validateRebuildRequests() {
 
-        final RebuildOperationRequest allNullRebuildOperationRequest = new RebuildOperationRequest(null, null, null, null);
+        final RebuildOperationRequest allNullRebuildOperationRequest = new RebuildOperationRequest("rebuild", null, null, null, null);
 
         final Set<ConstraintViolation<RebuildOperationRequest>> constraintViolations = validator.validate(allNullRebuildOperationRequest);
         assertTrue(constraintViolations.isEmpty());
 
-        final RebuildOperationRequest missingKeyspaceForSpecificTokens = new RebuildOperationRequest(null,
+        final RebuildOperationRequest missingKeyspaceForSpecificTokens = new RebuildOperationRequest("rebuild",
+                                                                                                     null,
                                                                                                      null,
                                                                                                      Stream.of(new RebuildOperationRequest.TokenRange("1", "2")).collect(toSet()),
                                                                                                      null);
@@ -49,9 +52,10 @@ public class OperationsValidationTest extends AbstractSidecarTest {
     @Test
     public void testRebuildRequests() throws IOException {
 
-        final Function<SidecarClient, List<SidecarClient.OperationResult<?>>> invalidRequests = client -> {
+        final Function<SidecarClient, List<OperationResult<?>>> invalidRequests = client -> {
 
-            final RebuildOperationRequest request1 = new RebuildOperationRequest(null,
+            final RebuildOperationRequest request1 = new RebuildOperationRequest("rebuild",
+                                                                                 null,
                                                                                  null,
                                                                                  Stream.of(new RebuildOperationRequest.TokenRange("1", "2")).collect(toSet()),
                                                                                  null);
@@ -59,7 +63,7 @@ public class OperationsValidationTest extends AbstractSidecarTest {
             return Stream.of(request1).map(client::rebuild).collect(toList());
         };
 
-        final Pair<AtomicReference<List<SidecarClient.OperationResult<?>>>, AtomicBoolean> result = performOnRunningServer(invalidRequests);
+        final Pair<AtomicReference<List<OperationResult<?>>>, AtomicBoolean> result = performOnRunningServer(invalidRequests);
 
         await().atMost(1, MINUTES).until(() -> result.getRight().get());
 

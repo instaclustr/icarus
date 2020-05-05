@@ -1,13 +1,12 @@
 package com.instaclustr.cassandra.sidecar.operations.scrub;
 
-import java.util.Set;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
-
-import com.google.common.base.MoreObjects;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.MoreObjects;
 import com.instaclustr.operations.OperationRequest;
 
 /**
@@ -90,7 +89,8 @@ public class ScrubOperationRequest extends OperationRequest {
     public final Set<String> tables;
 
     @JsonCreator
-    public ScrubOperationRequest(@JsonProperty("disableSnapshot") final boolean disableSnapshot,
+    public ScrubOperationRequest(@JsonProperty("type") final String type,
+                                 @JsonProperty("disableSnapshot") final boolean disableSnapshot,
                                  @JsonProperty("skipCorrupted") final boolean skipCorrupted,
                                  @JsonProperty("noValidate") final boolean noValidate,
                                  @JsonProperty("reinsertOverflowedTTL") final boolean reinsertOverflowedTTL,
@@ -104,18 +104,19 @@ public class ScrubOperationRequest extends OperationRequest {
         this.skipCorrupted = skipCorrupted;
         this.noValidate = noValidate;
         this.reinsertOverflowedTTL = reinsertOverflowedTTL;
+        this.type = type;
     }
 
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
-                .add("keyspace", keyspace)
-                .add("tables", tables)
-                .add("jobs", jobs)
-                .add("disableSnapshot", disableSnapshot)
-                .add("skipCorrupted", skipCorrupted)
-                .add("noValidate", noValidate)
-                .add("reinsertOverflowedTTL", reinsertOverflowedTTL)
-                .toString();
+                          .add("keyspace", keyspace)
+                          .add("tables", tables)
+                          .add("jobs", jobs)
+                          .add("disableSnapshot", disableSnapshot)
+                          .add("skipCorrupted", skipCorrupted)
+                          .add("noValidate", noValidate)
+                          .add("reinsertOverflowedTTL", reinsertOverflowedTTL)
+                          .toString();
     }
 }

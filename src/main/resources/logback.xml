@@ -8,6 +8,7 @@
 
     <logger name="org.hibernate.validator.internal" level="WARN"/>
     <logger name="org.glassfish.jersey.internal" level="ERROR"/>
+    <logger name="com.datastax.oss.driver.internal.core.channel" level="WARN"/>
     <logger name="com.datastax" level="WARN"/>
 
     <logger name="org.apache.http.wire" level="WARN"/>

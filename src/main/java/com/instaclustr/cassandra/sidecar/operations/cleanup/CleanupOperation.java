@@ -1,9 +1,9 @@
 package com.instaclustr.cassandra.sidecar.operations.cleanup;
 
+import javax.inject.Inject;
 import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
-import javax.inject.Inject;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -28,7 +28,8 @@ public class CleanupOperation extends Operation<CleanupOperationRequest> {
     // this constructor is not meant to be instantiated manually
     // and it fulfills the purpose of deserialisation from JSON string to an Operation object, currently just for testing purposes
     @JsonCreator
-    private CleanupOperation(@JsonProperty("id") final UUID id,
+    private CleanupOperation(@JsonProperty("type") final String type,
+                             @JsonProperty("id") final UUID id,
                              @JsonProperty("creationTime") final Instant creationTime,
                              @JsonProperty("state") final State state,
                              @JsonProperty("failureCause") final Throwable failureCause,
@@ -37,7 +38,10 @@ public class CleanupOperation extends Operation<CleanupOperationRequest> {
                              @JsonProperty("keyspace") final String keyspace,
                              @JsonProperty("tables") final Set<String> tables,
                              @JsonProperty("jobs") final int jobs) {
-        super(id, creationTime, state, failureCause, progress, startTime, new CleanupOperationRequest(keyspace, tables, jobs));
+        super(type, id, creationTime, state, failureCause, progress, startTime, new CleanupOperationRequest(type,
+                                                                                                            keyspace,
+                                                                                                            tables,
+                                                                                                            jobs));
         cassandraJMXService = null;
     }
 

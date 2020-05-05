@@ -1,19 +1,24 @@
 package com.instaclustr.cassandra.sidecar.operations.decommission;
 
 
-import com.google.common.base.MoreObjects;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.MoreObjects;
 import com.instaclustr.operations.OperationRequest;
 
 public class DecommissionOperationRequest extends OperationRequest {
 
     public Boolean force;
 
+    public DecommissionOperationRequest(final Boolean force) {
+        this("decommission", force);
+    }
+
     @JsonCreator
-    public DecommissionOperationRequest(@JsonProperty("force") final Boolean force) {
+    public DecommissionOperationRequest(@JsonProperty("type") final String type,
+                                        @JsonProperty("force") final Boolean force) {
         this.force = force;
+        this.type = type;
     }
 
     @Override

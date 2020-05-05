@@ -28,7 +28,8 @@ import com.instaclustr.cassandra.CassandraVersion;
 import com.instaclustr.cassandra.service.CassandraWaiter;
 import com.instaclustr.cassandra.service.CqlSessionService;
 import com.instaclustr.cassandra.sidecar.Sidecar;
-import com.instaclustr.operations.SidecarClient.OperationResult;
+import com.instaclustr.cassandra.sidecar.rest.SidecarClient;
+import com.instaclustr.cassandra.sidecar.rest.SidecarClient.OperationResult;
 import com.instaclustr.sidecar.http.JerseyHttpServerModule;
 import com.instaclustr.sidecar.http.JerseyHttpServerService;
 import com.instaclustr.threading.ExecutorsModule;
@@ -89,10 +90,8 @@ public abstract class AbstractSidecarTest {
                     bind(CassandraJMXService.class).toInstance(mock);
                     bind(CqlSessionService.class).toInstance(cqlSessionServiceMock);
                     bind(CassandraWaiter.class).toInstance(cassandraWaiterMock);
-                    bind(CassandraVersion.class).toProvider(new Provider<CassandraVersion>()
-                    {
-                        public CassandraVersion get()
-                        {
+                    bind(CassandraVersion.class).toProvider(new Provider<CassandraVersion>() {
+                        public CassandraVersion get() {
                             return cassandraVersionMock;
                         }
                     });
@@ -115,7 +114,11 @@ public abstract class AbstractSidecarTest {
 
         serverService = new JerseyHttpServerService(new InetSocketAddress("localhost", 4567), resourceConfig);
 
-        sidecarClient = new SidecarClient.Builder().withHostname(serverService.getServerInetAddress().getHostName()).withPort(serverService.getServerInetAddress().getPort()).build(resourceConfig);
+        sidecarClient = new SidecarClient.Builder()
+                .withHostAddress(serverService.getServerInetAddress().getHostName())
+                .withPort(serverService.getServerInetAddress().getPort())
+                .withObjectMapper(objectMapper)
+                .build(resourceConfig);
 
         validator = Validation.byDefaultProvider().configure().buildValidatorFactory().getValidator();
     }

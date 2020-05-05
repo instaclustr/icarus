@@ -44,13 +44,14 @@ public class DrainOperation extends Operation<DrainOperationRequest> {
     // this constructor is not meant to be instantiated manually
     // and it fulfills the purpose of deserialisation from JSON string to an Operation object, currently just for testing purposes
     @JsonCreator
-    private DrainOperation(@JsonProperty("id") final UUID id,
+    private DrainOperation(@JsonProperty("type") final String type,
+                           @JsonProperty("id") final UUID id,
                            @JsonProperty("creationTime") final Instant creationTime,
                            @JsonProperty("state") final State state,
                            @JsonProperty("failureCause") final Throwable failureCause,
                            @JsonProperty("progress") final float progress,
                            @JsonProperty("startTime") final Instant startTime) {
-        super(id, creationTime, state, failureCause, progress, startTime, new DrainOperationRequest());
+        super(type, id, creationTime, state, failureCause, progress, startTime, new DrainOperationRequest(type));
         this.cassandraStatusService = null;
         this.cassandraJMXService = null;
     }

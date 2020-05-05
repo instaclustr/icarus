@@ -1,13 +1,12 @@
 package com.instaclustr.cassandra.sidecar.operations.upgradesstables;
 
-import java.util.Set;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
-
-import com.google.common.base.MoreObjects;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.MoreObjects;
 import com.instaclustr.operations.OperationRequest;
 
 /**
@@ -73,7 +72,8 @@ public class UpgradeSSTablesOperationRequest extends OperationRequest {
     public final Set<String> tables;
 
     @JsonCreator
-    public UpgradeSSTablesOperationRequest(@JsonProperty("keyspace") final String keyspace,
+    public UpgradeSSTablesOperationRequest(@JsonProperty("type") final String type,
+                                           @JsonProperty("keyspace") final String keyspace,
                                            @JsonProperty("tables") final Set<String> tables,
                                            @JsonProperty("includeAllSStables") final boolean includeAllSStables,
                                            @JsonProperty("jobs") final int jobs) {
@@ -81,15 +81,16 @@ public class UpgradeSSTablesOperationRequest extends OperationRequest {
         this.keyspace = keyspace;
         this.tables = tables;
         this.includeAllSStables = includeAllSStables;
+        this.type = type;
     }
 
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
-                .add("keyspace", keyspace)
-                .add("tables", tables)
-                .add("jobs", jobs)
-                .add("includeAllSStables", includeAllSStables)
-                .toString();
+                          .add("keyspace", keyspace)
+                          .add("tables", tables)
+                          .add("jobs", jobs)
+                          .add("includeAllSStables", includeAllSStables)
+                          .toString();
     }
 }

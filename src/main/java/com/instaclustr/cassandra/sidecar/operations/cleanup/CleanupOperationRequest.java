@@ -1,13 +1,12 @@
 package com.instaclustr.cassandra.sidecar.operations.cleanup;
 
-import java.util.Set;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
-
-import com.google.common.base.MoreObjects;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.MoreObjects;
 import com.instaclustr.operations.OperationRequest;
 
 /**
@@ -56,29 +55,35 @@ import com.instaclustr.operations.OperationRequest;
  */
 public class CleanupOperationRequest extends OperationRequest {
 
-    @Min(0)
-    public final int jobs;
-
     @NotEmpty
     public final String keyspace;
 
     public final Set<String> tables;
 
+    @Min(0)
+    public final int jobs;
+
+    public CleanupOperationRequest(@NotEmpty final String keyspace, final Set<String> tables, @Min(0) final int jobs) {
+        this("cleanup", keyspace, tables, jobs);
+    }
+
     @JsonCreator
-    public CleanupOperationRequest(@JsonProperty("keyspace") final String keyspace,
+    public CleanupOperationRequest(@JsonProperty("type") final String type,
+                                   @JsonProperty("keyspace") final String keyspace,
                                    @JsonProperty("tables") final Set<String> tables,
                                    @JsonProperty("jobs") final int jobs) {
         this.jobs = jobs;
         this.keyspace = keyspace;
         this.tables = tables;
+        this.type = type;
     }
 
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
-                .add("tables", tables)
-                .add("keyspace", keyspace)
-                .add("jobs", jobs)
-                .toString();
+                          .add("tables", tables)
+                          .add("keyspace", keyspace)
+                          .add("jobs", jobs)
+                          .toString();
     }
 }
