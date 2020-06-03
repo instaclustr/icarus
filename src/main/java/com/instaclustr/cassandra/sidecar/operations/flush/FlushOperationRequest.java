@@ -1,5 +1,6 @@
 package com.instaclustr.cassandra.sidecar.operations.flush;
 
+import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.util.Set;
 
@@ -10,7 +11,7 @@ import com.instaclustr.operations.OperationRequest;
 
 public class FlushOperationRequest extends OperationRequest {
 
-    @NotNull
+    @NotEmpty
     public String keyspace;
 
     public Set<String> tables;

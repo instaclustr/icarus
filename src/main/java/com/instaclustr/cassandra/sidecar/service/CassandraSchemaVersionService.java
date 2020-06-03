@@ -1,6 +1,5 @@
 package com.instaclustr.cassandra.sidecar.service;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.inject.Inject;
 import com.instaclustr.operations.FunctionWithEx;
 import jmx.org.apache.cassandra.service.CassandraJMXService;
@@ -38,7 +37,6 @@ public class CassandraSchemaVersionService {
 
         private String schemaVersion;
 
-        @JsonIgnore
         private Exception exception;
 
         public String getSchemaVersion() {

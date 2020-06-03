@@ -197,7 +197,6 @@ public class SidecarBackupOperationCoordinator extends BaseBackupOperationCoordi
             })).toArray(CompletableFuture<?>[]::new)).get();
         } catch (ExecutionException | InterruptedException ex) {
             ex.printStackTrace();
-            System.out.println(ex.getMessage());
             resultGatherer.gather(globalOperation, new OperationCoordinatorException("Unable to coordinate backup!", ex));
         } finally {
             executorService.shutdownNow();

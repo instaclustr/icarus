@@ -14,6 +14,7 @@ import com.instaclustr.cassandra.backup.impl._import.ImportOperationRequest;
 import com.instaclustr.cassandra.backup.impl.backup.BackupOperationRequest;
 import com.instaclustr.cassandra.backup.impl.restore.RestoreOperationRequest;
 import com.instaclustr.cassandra.backup.impl.truncate.TruncateOperationRequest;
+import com.instaclustr.measure.DataRate;
 import com.instaclustr.sidecar.embedded.AbstractCassandraSidecarTest;
 import org.testng.annotations.Test;
 
@@ -32,7 +33,7 @@ public class SingleNodeDistributedBackupRestoreTest extends AbstractCassandraSid
                 "backup", // type
                 new StorageLocation("file://" + target("backup1") + "/cluster/test-dc/global"), // storage
                 null, // duration
-                null, // bandwidth
+                new DataRate(1L, DataRate.DataRateUnit.MBPS), // bandwidth
                 null, // concurrentConnections
                 null, // lockFile
                 cassandraDir.resolve("data"), // cassandra dir

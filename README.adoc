@@ -1,4 +1,4 @@
-== Cassandra Sidecar
+= Cassandra Sidecar
 
 image:https://img.shields.io/maven-central/v/com.instaclustr/cassandra-sidecar.svg?label=Maven%20Central[link=https://search.maven.org/search?q=g:%22com.instaclustr%22%20AND%20a:%22cassandra-sidecar%22]
 
@@ -7,11 +7,11 @@ image:https://circleci.com/gh/instaclustr/cassandra-sidecar.svg?style=svg["Insta
 This repository is home of a sidecar for Apache Cassandra database. Sidecar is meant to be run alongside of Cassandra instance
 and sidecar talks to Cassandra via JMX.
 
-Sidecar JAR is also integrating backup-restore solution of Instaclustr seamlessly so it might be used in two modes -
+Sidecar JAR is also integrating https://github.com/instaclustr/cassandra-backup[backup-restore] solution of Instaclustr seamlessly so it might be used in two modes -
 either as a long-running server application which responds to clients requests or as a CLI application via which one
 can backup / restore a Cassandra node.
 
-=== Usage
+== Usage
 
 [source,bash]
 ----
@@ -50,38 +50,20 @@ On the other hand, if you use server mode, there will be HTTP REST server starte
 $ java -jar cassandra-sidecar-1.0.0.jar cassandra-sidecar
 ----
 
-=== REST interface
+== REST interface
 
 Sidecar server application accepts JSON body. Each operation we want to do against Cassandra has corresponding JSON
-payload. In turn, sidecar takes this body and calls respective JMX method to invoke it.
+payload. In turn, sidecar takes this body and calls respective JMX method to invoke it if that operation requires to do so.
 
-There are currently these operations:
+Feel free to consult link:spec.yaml[OpenAPI Spec]
 
-* cleanup
-* decommission
-* drain
-* flush
-* rebuild
-* refresh
-* restart
-* scrub
-* upgradesstables
+== Distributed backup and restore
 
-Lets say we want to execute flushing operation which flushes memtables into sstables. You have to send this
-payload to `http://127.0.0.1:4567/operations`
+=== Distributed backup
 
-[source,json]
-----
-{
-	"type": "flush",
-	"keyspace": "mykeyspace",
-	"tables": [
-	    "table1", "table2"
-	]
-}
-----
+=== Distributed restore
 
-=== Build
+== Build
 
 [source,bash]
 ----

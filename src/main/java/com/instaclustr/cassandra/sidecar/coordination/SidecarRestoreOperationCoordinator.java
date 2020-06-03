@@ -342,6 +342,7 @@ public class SidecarRestoreOperationCoordinator extends BaseRestoreOperationCoor
             })).toArray(CompletableFuture<?>[]::new)).get();
 
         } catch (ExecutionException | InterruptedException ex) {
+            ex.printStackTrace();
             resultGatherer.gather(globalOperation, new OperationCoordinatorException("Unable to coordinate restoration!", ex));
         } finally {
             executorService.shutdownNow();
