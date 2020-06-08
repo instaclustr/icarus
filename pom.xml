@@ -82,7 +82,7 @@
         <dependency>
             <groupId>com.instaclustr</groupId>
             <artifactId>instaclustr-backup-restore</artifactId>
-            <version>2.0.0-alpha2</version>
+            <version>2.0.0-alpha3</version>
         </dependency>
 
         <!-- test dependencies -->
@@ -91,20 +91,6 @@
             <groupId>com.github.nosan</groupId>
             <artifactId>embedded-cassandra</artifactId>
             <version>${version.embedded.cassandra}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>com.datastax.oss</groupId>
-            <artifactId>java-driver-query-builder</artifactId>
-            <version>${cassandra.driver.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>com.datastax.oss</groupId>
-            <artifactId>java-driver-mapper-runtime</artifactId>
-            <version>${cassandra.driver.version}</version>
             <scope>test</scope>
         </dependency>
 
