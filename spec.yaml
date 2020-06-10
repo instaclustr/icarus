@@ -131,7 +131,7 @@ paths:
     get:
       tags:
         - "operations"
-      summary: "abc"
+      summary: "gets operation by its ID"
       parameters:
         - name: "operationId"
           in: "path"
@@ -143,6 +143,12 @@ paths:
       responses:
         "200":
           description: "Returns a submitted operation"
+          headers:
+            Location:
+              schema:
+                type: string
+              description: url of operation
+              example: "http://localhost:4567/operations/1c45e693-4cb1-4fd6-93f1-f71f87ba64b7"
         "404":
           description: "Return code in case there is not any operation under such operationId"
   /version:
