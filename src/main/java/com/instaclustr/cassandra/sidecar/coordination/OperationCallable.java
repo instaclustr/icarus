@@ -98,7 +98,7 @@ public abstract class OperationCallable<O extends Operation<T>, T extends Operat
                 }
             });
 
-            final String logMessage = format("operation %s against node %s has with hostId %s has finished with state %s.",
+            final String logMessage = format("operation %s against node %s with hostId %s has finished with state %s.",
                                              operation.id,
                                              sidecarClient.getHost(),
                                              sidecarClient.getHostId(),

@@ -737,8 +737,8 @@ components:
     DataRate:
       type: object
       required:
+        - value
         - unit
-        - description
       description: >
         bandwidth used during uploads
       properties:
