@@ -69,12 +69,8 @@ import com.instaclustr.operations.OperationRequest;
 import org.awaitility.Duration;
 import org.awaitility.core.ConditionFactory;
 import org.glassfish.jersey.server.ResourceConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class SidecarClient implements Closeable {
-
-    private static final Logger logger = LoggerFactory.getLogger(SidecarClient.class);
 
     private final String rootUrl;
     private final Client client;
@@ -87,8 +83,9 @@ public class SidecarClient implements Closeable {
 
     private final int port;
     private final String hostAddress;
-    private final UUID hostId; // hostId as Cassandra sees it
+    private final String clusterName;
     private final String dc; // datacenter as Cassandra sees it
+    private final UUID hostId; // hostId as Cassandra sees it
     private final ObjectMapper objectMapper;
 
     private SidecarClient(final Builder builder, final Client client) {
@@ -110,8 +107,9 @@ public class SidecarClient implements Closeable {
         cassandraVersionWebTarget = this.client.target(format("%s/version/cassandra", rootUrl));
         sidecarVersionWebTarget = this.client.target(format("%s/version/sidecar", rootUrl));
 
-        this.hostId = builder.hostId;
+        this.clusterName = builder.clusterName;
         this.dc = builder.dc;
+        this.hostId = builder.hostId;
 
         this.objectMapper = builder.objectMapper;
     }
@@ -125,8 +123,9 @@ public class SidecarClient implements Closeable {
         return "SidecarClient{" +
                 "port=" + port +
                 ", hostAddress='" + hostAddress + '\'' +
-                ", hostId=" + hostId +
+                ", cluster=" + clusterName +
                 ", dc='" + dc + '\'' +
+                ", hostId=" + hostId +
                 '}';
     }
 
@@ -180,6 +179,10 @@ public class SidecarClient implements Closeable {
 
     public String getHost() {
         return hostAddress;
+    }
+
+    public String getClusterName() {
+        return clusterName;
     }
 
     public OperationResult<CleanupOperation> cleanup(final CleanupOperationRequest operationRequest) {
@@ -326,8 +329,9 @@ public class SidecarClient implements Closeable {
 
         private int port = 8080;
 
-        private UUID hostId;
+        private String clusterName;
         public String dc;
+        private UUID hostId;
 
         private ObjectMapper objectMapper;
 
@@ -347,6 +351,11 @@ public class SidecarClient implements Closeable {
 
         public Builder withDc(final String dc) {
             this.dc = dc;
+            return this;
+        }
+
+        public Builder withClusterName(final String clusterName) {
+            this.clusterName = clusterName;
             return this;
         }
 

@@ -136,7 +136,8 @@ public class SidecarBackupOperationCoordinator extends BaseBackupOperationCoordi
 
         final Map<InetAddress, UUID> endpoints = getEndpoints(cassandraJMXService, operation.request.dc);
         final Map<InetAddress, String> endpointDCs = getEndpointsDCs(cassandraJMXService, endpoints.keySet());
-        final Map<InetAddress, SidecarClient> sidecarClientMap = constructSidecars(endpoints, endpointDCs, sidecarSpec, objectMapper);
+        final String clusterName = CoordinationUtils.getClusterName(cassandraJMXService);
+        final Map<InetAddress, SidecarClient> sidecarClientMap = constructSidecars(clusterName, endpoints, endpointDCs, sidecarSpec, objectMapper);
 
         logger.info("Executing backup requests against " + sidecarClientMap.toString());
 
@@ -151,8 +152,12 @@ public class SidecarBackupOperationCoordinator extends BaseBackupOperationCoordi
                 final BackupOperation backupOperation = new BackupOperation(clonedRequest);
                 backupOperation.request.globalRequest = false;
 
-                backupOperation.request.storageLocation = StorageLocation.updateNodeId(backupOperation.request.storageLocation, client.getHostId().get());
-                backupOperation.request.storageLocation = StorageLocation.updateDatacenter(backupOperation.request.storageLocation, client.getDc());
+                backupOperation.request.storageLocation = StorageLocation.update(backupOperation.request.storageLocation,
+                                                                                 client.getClusterName(),
+                                                                                 client.getDc(),
+                                                                                 client.getHostId().get().toString());
+
+                backupOperation.request.storageLocation.globalRequest = false;
 
                 return backupOperation;
             } catch (final Exception ex) {
@@ -197,7 +202,7 @@ public class SidecarBackupOperationCoordinator extends BaseBackupOperationCoordi
             })).toArray(CompletableFuture<?>[]::new)).get();
         } catch (ExecutionException | InterruptedException ex) {
             ex.printStackTrace();
-            resultGatherer.gather(globalOperation, new OperationCoordinatorException("Unable to coordinate backup!", ex));
+            resultGatherer.gather(globalOperation, new OperationCoordinatorException("Unable to coordinate backup! " + ex.getMessage(), ex));
         } finally {
             executorService.shutdownNow();
         }

@@ -43,7 +43,8 @@ public class BackupRestoreOperationTest extends AbstractCassandraSidecarTest {
                     "default",
                     "test-sidecar-secret",
                     false,
-                    null
+                    null,
+                    false
             );
 
             final OperationResult<BackupOperation> result = sidecarHolder.sidecarClient.backup(backupOperationRequest);

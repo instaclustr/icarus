@@ -198,12 +198,16 @@ public class SidecarRestoreOperationCoordinator extends BaseRestoreOperationCoor
         }
 
 
-        default void prepareBasics(final RestoreOperationRequest request, final SidecarClient client) {
-            request.storageLocation = StorageLocation.updateNodeId(request.storageLocation, client.getHostId().get());
-            request.storageLocation = StorageLocation.updateDatacenter(request.storageLocation, client.getDc());
+        default void prepareBasics(final RestoreOperationRequest request, final SidecarClient client) throws OperationCoordinatorException {
+
+            if (!client.getHostId().isPresent()) {
+                throw new OperationCoordinatorException(String.format("There is not any hostId for client %s", client.getHost()));
+            }
+
+            request.storageLocation = StorageLocation.update(request.storageLocation, client.getClusterName(), client.getDc(), client.getHostId().get().toString());
+            request.storageLocation.globalRequest = false;
             request.globalRequest = false;
         }
-
     }
 
     private static final class DownloadPhasePreparation implements PhasePreparation {
@@ -311,7 +315,8 @@ public class SidecarRestoreOperationCoordinator extends BaseRestoreOperationCoor
     private Map<InetAddress, SidecarClient> getSidecarClients() throws Exception {
         final Map<InetAddress, UUID> endpoints = getEndpoints(cassandraJMXService);
         final Map<InetAddress, String> endpointDCs = getEndpointsDCs(cassandraJMXService, endpoints.keySet());
-        return constructSidecars(endpoints, endpointDCs, sidecarSpec, objectMapper);
+        final String clusterName = CoordinationUtils.getClusterName(cassandraJMXService);
+        return constructSidecars(clusterName, endpoints, endpointDCs, sidecarSpec, objectMapper);
     }
 
     private RestorationPhaseResultGatherer executeDistributedPhase(final PhasePreparation phasePreparation,

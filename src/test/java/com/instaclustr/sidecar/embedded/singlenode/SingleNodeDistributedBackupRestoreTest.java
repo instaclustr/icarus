@@ -42,7 +42,8 @@ public class SingleNodeDistributedBackupRestoreTest extends AbstractCassandraSid
                 "default", // k8s namespace
                 "test-sidecar-secret", // k8s secret
                 true, // !!! GLOBAL REQUEST !!!
-                null // DC is null so will backup all datacenters
+                null, // DC is null so will backup all datacenters
+                false // keep existing snapshot
         );
 
         sidecarHolder.sidecarClient.waitForCompleted(sidecarHolder.sidecarClient.backup(backupOperationRequest));

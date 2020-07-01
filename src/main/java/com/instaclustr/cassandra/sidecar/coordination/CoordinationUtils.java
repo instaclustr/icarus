@@ -11,6 +11,7 @@ import java.util.UUID;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
+import com.instaclustr.cassandra.backup.impl.interaction.CassandraClusterName;
 import com.instaclustr.cassandra.backup.impl.interaction.CassandraEndpointDC;
 import com.instaclustr.cassandra.backup.impl.interaction.CassandraEndpoints;
 import com.instaclustr.cassandra.sidecar.rest.SidecarClient;
@@ -23,6 +24,15 @@ public class CoordinationUtils {
     public static Map<InetAddress, UUID> getEndpoints(final CassandraJMXService cassandraJMXService) throws OperationCoordinatorException {
         return CoordinationUtils.getEndpoints(cassandraJMXService, null);
     }
+
+    public static String getClusterName(final CassandraJMXService cassandraJMXService) throws OperationCoordinatorException {
+        try {
+            return new CassandraClusterName(cassandraJMXService).act();
+        } catch (final Exception ex) {
+            throw new OperationCoordinatorException("Unable to get the name of a cluster!", ex);
+        }
+    }
+
 
     public static Map<InetAddress, UUID> getEndpoints(final CassandraJMXService cassandraJMXService, final String datacenter) throws OperationCoordinatorException {
         try {
@@ -40,7 +50,8 @@ public class CoordinationUtils {
         }
     }
 
-    public static Map<InetAddress, SidecarClient> constructSidecars(final Map<InetAddress, UUID> endpoints,
+    public static Map<InetAddress, SidecarClient> constructSidecars(final String clusterName,
+                                                                    final Map<InetAddress, UUID> endpoints,
                                                                     final Map<InetAddress, String> endpointDcs,
                                                                     final SidecarSpec sidecarSpec,
                                                                     final ObjectMapper objectMapper) {
@@ -55,13 +66,14 @@ public class CoordinationUtils {
 
         final Map<InetAddress, SidecarClient> inetAddressSidecarMap = new HashMap<>();
 
-            for (final Map.Entry<InetAddress, UUID> entry : endpoints.entrySet()) {
+        for (final Map.Entry<InetAddress, UUID> entry : endpoints.entrySet()) {
             final SidecarClient sidecar = new SidecarClient.Builder()
                     .withInetAddress(entry.getKey())
                     // here we assume that all sidecars would be on same port as this one
                     .withPort(sidecarSpec.httpServerAddress.getPort())
-                    .withHostId(entry.getValue())
+                    .withClusterName(clusterName)
                     .withDc(endpointDcs.get(entry.getKey()))
+                    .withHostId(entry.getValue())
                     .withObjectMapper(objectMapper)
                     .build();
 
