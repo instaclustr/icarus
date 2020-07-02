@@ -135,8 +135,17 @@ public class SidecarBackupOperationCoordinator extends BaseBackupOperationCoordi
         }
 
         final Map<InetAddress, UUID> endpoints = getEndpoints(cassandraJMXService, operation.request.dc);
+
+        logger.info("Resolved endpoints: {}", endpoints.toString());
+
         final Map<InetAddress, String> endpointDCs = getEndpointsDCs(cassandraJMXService, endpoints.keySet());
+
+        logger.info("Resolved endpoints and their dc: {}", endpointDCs.toString());
+
         final String clusterName = CoordinationUtils.getClusterName(cassandraJMXService);
+
+        logger.info("Resolved cluster name: {}", clusterName);
+
         final Map<InetAddress, SidecarClient> sidecarClientMap = constructSidecars(clusterName, endpoints, endpointDCs, sidecarSpec, objectMapper);
 
         logger.info("Executing backup requests against " + sidecarClientMap.toString());
