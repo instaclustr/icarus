@@ -17,7 +17,6 @@ import com.instaclustr.cassandra.backup.impl.backup.BackupModules.CommitlogBacku
 import com.instaclustr.cassandra.backup.impl.restore.RestoreModules.RestorationStrategyModule;
 import com.instaclustr.cassandra.backup.impl.restore.RestoreModules.RestoreCommitlogModule;
 import com.instaclustr.cassandra.backup.impl.restore.RestoreModules.RestoreModule;
-import com.instaclustr.cassandra.backup.impl.truncate.TruncateModule;
 import com.instaclustr.cassandra.sidecar.operations.cleanup.CleanupsModule;
 import com.instaclustr.cassandra.sidecar.operations.decommission.DecommissioningModule;
 import com.instaclustr.cassandra.sidecar.operations.drain.DrainModule;
@@ -147,7 +146,6 @@ public final class Sidecar extends CLIApplication implements Callable<Void> {
             add(new RestartModule());
             add(new RefreshModule());
             add(new FlushModule());
-            add(new TruncateModule());
             add(new ImportModule());
         }};
     }

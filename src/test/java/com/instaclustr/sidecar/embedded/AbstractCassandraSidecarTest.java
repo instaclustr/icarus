@@ -1,5 +1,6 @@
 package com.instaclustr.sidecar.embedded;
 
+import static com.instaclustr.operations.OperationBindings.installOperationBindings;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static org.awaitility.Awaitility.await;
 
@@ -21,8 +22,11 @@ import com.github.nosan.embedded.cassandra.api.Version;
 import com.github.nosan.embedded.cassandra.artifact.Artifact;
 import com.github.nosan.embedded.cassandra.commons.io.ClassPathResource;
 import com.google.common.util.concurrent.ServiceManager;
+import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.instaclustr.cassandra.backup.impl.truncate.TruncateOperation;
+import com.instaclustr.cassandra.backup.impl.truncate.TruncateOperationRequest;
 import com.instaclustr.cassandra.sidecar.Sidecar;
 import com.instaclustr.cassandra.sidecar.rest.SidecarClient;
 import com.instaclustr.measure.Time;
@@ -180,7 +184,20 @@ public abstract class AbstractCassandraSidecarTest {
         sidecarSpec.httpServerAddress = new HttpServerInetSocketAddressTypeConverter().convert(httpAdddress + ":" + httpPort.toString());
         sidecarSpec.operationsExpirationPeriod = new Time(1L, HOURS);
 
-        Injector injector = Guice.createInjector(new Sidecar().getModules(sidecarSpec, cassandraJMXSpec));
+        List<AbstractModule> modules = new Sidecar().getModules(sidecarSpec, cassandraJMXSpec);
+
+        // we expose truncate here via REST so we can truncate via sidecar for test purposes
+        modules.add(new AbstractModule() {
+            @Override
+            protected void configure() {
+                installOperationBindings(binder(),
+                                         "truncate",
+                                         TruncateOperationRequest.class,
+                                         TruncateOperation.class);
+            }
+        });
+
+        Injector injector = Guice.createInjector(modules);
 
         ServiceManager serviceManager = injector.getInstance(ServiceManager.class);
 

@@ -5,8 +5,6 @@ import static com.instaclustr.cassandra.backup.impl.restore.RestorationPhase.Res
 import static com.instaclustr.cassandra.backup.impl.restore.RestorationPhase.RestorationPhaseType.IMPORT;
 import static com.instaclustr.cassandra.backup.impl.restore.RestorationPhase.RestorationPhaseType.TRUNCATE;
 import static com.instaclustr.cassandra.sidecar.coordination.CoordinationUtils.constructSidecars;
-import static com.instaclustr.cassandra.sidecar.coordination.CoordinationUtils.getEndpoints;
-import static com.instaclustr.cassandra.sidecar.coordination.CoordinationUtils.getEndpointsDCs;
 import static java.lang.String.format;
 import static java.util.concurrent.CompletableFuture.allOf;
 import static java.util.concurrent.CompletableFuture.supplyAsync;
@@ -35,6 +33,8 @@ import com.instaclustr.cassandra.backup.impl.restore.RestoreOperation;
 import com.instaclustr.cassandra.backup.impl.restore.RestoreOperationRequest;
 import com.instaclustr.cassandra.backup.impl.restore.coordination.BaseRestoreOperationCoordinator;
 import com.instaclustr.cassandra.sidecar.rest.SidecarClient;
+import com.instaclustr.cassandra.topology.CassandraClusterTopology;
+import com.instaclustr.cassandra.topology.CassandraClusterTopology.ClusterTopology;
 import com.instaclustr.operations.GlobalOperationProgressTracker;
 import com.instaclustr.operations.Operation;
 import com.instaclustr.operations.OperationsService;
@@ -71,7 +71,7 @@ public class SidecarRestoreOperationCoordinator extends BaseRestoreOperationCoor
     @Override
     public ResultGatherer<RestoreOperationRequest> coordinate(final Operation<RestoreOperationRequest> operation) throws OperationCoordinatorException {
 
-        /**
+        /*
          * I receive a request
          *  If it is a global request, I will be coordinator
          *  otherwise just execute that request
@@ -313,10 +313,8 @@ public class SidecarRestoreOperationCoordinator extends BaseRestoreOperationCoor
 
 
     private Map<InetAddress, SidecarClient> getSidecarClients() throws Exception {
-        final Map<InetAddress, UUID> endpoints = getEndpoints(cassandraJMXService);
-        final Map<InetAddress, String> endpointDCs = getEndpointsDCs(cassandraJMXService, endpoints.keySet());
-        final String clusterName = CoordinationUtils.getClusterName(cassandraJMXService);
-        return constructSidecars(clusterName, endpoints, endpointDCs, sidecarSpec, objectMapper);
+        final ClusterTopology clusterTopology = new CassandraClusterTopology(cassandraJMXService, null).act();
+        return constructSidecars(clusterTopology.clusterName, clusterTopology.endpoints, clusterTopology.endpointDcs, sidecarSpec, objectMapper);
     }
 
     private RestorationPhaseResultGatherer executeDistributedPhase(final PhasePreparation phasePreparation,
@@ -361,7 +359,7 @@ public class SidecarRestoreOperationCoordinator extends BaseRestoreOperationCoor
         public RestoreOperationCallable(final Operation<RestoreOperationRequest> operation,
                                         final SidecarClient sidecarClient,
                                         final GlobalOperationProgressTracker progressTracker) {
-            super(operation, sidecarClient, progressTracker, operation.request.restorationPhase.toString().toLowerCase());
+            super(operation, operation.request.timeout, sidecarClient, progressTracker, operation.request.restorationPhase.toString().toLowerCase());
         }
 
         public SidecarClient.OperationResult<RestoreOperation> sendOperation() {

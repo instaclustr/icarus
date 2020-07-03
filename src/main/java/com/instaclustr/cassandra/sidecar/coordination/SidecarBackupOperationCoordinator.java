@@ -1,13 +1,13 @@
 package com.instaclustr.cassandra.sidecar.coordination;
 
 import static com.instaclustr.cassandra.sidecar.coordination.CoordinationUtils.constructSidecars;
-import static com.instaclustr.cassandra.sidecar.coordination.CoordinationUtils.getEndpoints;
-import static com.instaclustr.cassandra.sidecar.coordination.CoordinationUtils.getEndpointsDCs;
 import static java.lang.String.format;
 import static java.util.concurrent.CompletableFuture.allOf;
 import static java.util.concurrent.CompletableFuture.supplyAsync;
 
 import java.net.InetAddress;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -25,9 +25,12 @@ import com.instaclustr.cassandra.backup.impl.StorageLocation;
 import com.instaclustr.cassandra.backup.impl.backup.BackupOperation;
 import com.instaclustr.cassandra.backup.impl.backup.BackupOperationRequest;
 import com.instaclustr.cassandra.backup.impl.backup.BackupPhaseResultGatherer;
+import com.instaclustr.cassandra.backup.impl.backup.Backuper;
 import com.instaclustr.cassandra.backup.impl.backup.coordination.BaseBackupOperationCoordinator;
 import com.instaclustr.cassandra.sidecar.rest.SidecarClient;
 import com.instaclustr.cassandra.sidecar.rest.SidecarClient.OperationResult;
+import com.instaclustr.cassandra.topology.CassandraClusterTopology;
+import com.instaclustr.cassandra.topology.CassandraClusterTopology.ClusterTopology;
 import com.instaclustr.operations.GlobalOperationProgressTracker;
 import com.instaclustr.operations.Operation;
 import com.instaclustr.operations.OperationsService;
@@ -134,15 +137,25 @@ public class SidecarBackupOperationCoordinator extends BaseBackupOperationCoordi
             throw new IllegalStateException("ID of a running operation does not equal to ID of this backup operation!");
         }
 
-        final Map<InetAddress, UUID> endpoints = getEndpoints(cassandraJMXService, operation.request.dc);
+        ClusterTopology topology;
+
+        try {
+            topology = new CassandraClusterTopology(cassandraJMXService, operation.request.dc).act();
+        } catch (final Exception ex) {
+            throw new OperationCoordinatorException("Unable to get ClusterTopoogy!", ex);
+        }
+
+        final Map<InetAddress, UUID> endpoints = topology.endpoints;
+
+        logger.info("Datacenter to be backed up: {}", operation.request.dc == null ? "all of them" : operation.request.dc);
 
         logger.info("Resolved endpoints: {}", endpoints.toString());
 
-        final Map<InetAddress, String> endpointDCs = getEndpointsDCs(cassandraJMXService, endpoints.keySet());
+        final Map<InetAddress, String> endpointDCs = topology.endpointDcs;
 
         logger.info("Resolved endpoints and their dc: {}", endpointDCs.toString());
 
-        final String clusterName = CoordinationUtils.getClusterName(cassandraJMXService);
+        final String clusterName = topology.clusterName;
 
         logger.info("Resolved cluster name: {}", clusterName);
 
@@ -174,7 +187,30 @@ public class SidecarBackupOperationCoordinator extends BaseBackupOperationCoordi
             }
         };
 
-        return executeDistributedBackup(operation, sidecarClientMap, backupRequestPreparation);
+
+        BackupPhaseResultGatherer backupPhaseResultGatherer = executeDistributedBackup(operation, sidecarClientMap, backupRequestPreparation);
+
+        try {
+            final String clusterTopologyString = ClusterTopology.writeToString(objectMapper, topology);
+
+            final String clusterId = sidecarClientMap.entrySet().iterator().next().getValue().getClusterName();
+
+            final Path topologyPath = Paths.get(format("topology/%s-%s-%s-topology.json",
+                                                       clusterId,
+                                                       operation.request.snapshotTag,
+                                                       topology.schemaVersion));
+
+            logger.info("Uploading cluster topology under {}", topologyPath);
+            logger.info("\n" + clusterTopologyString);
+
+            try (Backuper backuper = backuperFactoryMap.get(operation.request.storageLocation.storageProvider).createBackuper(operation.request)) {
+                backuper.uploadText(clusterTopologyString, backuper.objectKeyToRemoteReference(topologyPath));
+            }
+        } catch (final Exception ex) {
+            throw new OperationCoordinatorException("Unable to upload topology file", ex);
+        }
+
+        return backupPhaseResultGatherer;
     }
 
     private interface BackupRequestPreparation {
@@ -224,7 +260,7 @@ public class SidecarBackupOperationCoordinator extends BaseBackupOperationCoordi
         public BackupOperationCallable(final Operation<BackupOperationRequest> operation,
                                        final SidecarClient sidecarClient,
                                        final GlobalOperationProgressTracker progressTracker) {
-            super(operation, sidecarClient, progressTracker, "backup");
+            super(operation, operation.request.timeout, sidecarClient, progressTracker, "backup");
         }
 
         public OperationResult<BackupOperation> sendOperation() {

@@ -7,7 +7,6 @@ import java.util.Collections;
 
 import com.google.common.collect.ImmutableSet;
 import com.instaclustr.cassandra.CassandraVersion;
-import com.instaclustr.cassandra.backup.impl.truncate.TruncateOperationRequest;
 import com.instaclustr.cassandra.sidecar.operations.cleanup.CleanupOperationRequest;
 import com.instaclustr.cassandra.sidecar.operations.flush.FlushOperationRequest;
 import com.instaclustr.cassandra.sidecar.operations.refresh.RefreshOperationRequest;
@@ -48,17 +47,6 @@ public class EmbeddedCassandraOperationsTest extends AbstractCassandraSidecarTes
                                                                                                          Collections.singleton(tableName),
                                                                                                          true,
                                                                                                          0)));
-    }
-
-    @Test
-    public void truncate() {
-        dbHelper.addData(keyspaceName, tableName);
-        dbHelper.addData(keyspaceName, tableName);
-        dbHelper.addData(keyspaceName, tableName);
-        dbHelper.addData(keyspaceName, tableName);
-        dbHelper.addData(keyspaceName, tableName);
-
-        sidecarClient.waitForCompleted(sidecarClient.truncate(new TruncateOperationRequest(keyspaceName, tableName)));
     }
 
     @Test

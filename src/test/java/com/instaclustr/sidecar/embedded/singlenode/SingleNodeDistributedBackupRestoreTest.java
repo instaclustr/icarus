@@ -43,7 +43,8 @@ public class SingleNodeDistributedBackupRestoreTest extends AbstractCassandraSid
                 "test-sidecar-secret", // k8s secret
                 true, // !!! GLOBAL REQUEST !!!
                 null, // DC is null so will backup all datacenters
-                false // keep existing snapshot
+                false, // keep existing snapshot
+                null // timeout
         );
 
         sidecarHolder.sidecarClient.waitForCompleted(sidecarHolder.sidecarClient.backup(backupOperationRequest));
@@ -72,7 +73,9 @@ public class SingleNodeDistributedBackupRestoreTest extends AbstractCassandraSid
                 null, // schema version
                 null, // k8s namespace
                 null, // k8s secret name
-                true // !!! GLOBAL REQUEST !!!
+                true, // !!! GLOBAL REQUEST !!!
+                null, // timeout,
+                false
         );
 
         sidecarHolder.sidecarClient.waitForCompleted(sidecarHolder.sidecarClient.restore(restoreOperationRequest));

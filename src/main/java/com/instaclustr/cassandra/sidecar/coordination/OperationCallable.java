@@ -8,6 +8,7 @@ import static org.awaitility.Awaitility.await;
 
 import java.io.Closeable;
 import java.time.Instant;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import com.instaclustr.cassandra.sidecar.rest.SidecarClient;
@@ -25,11 +26,13 @@ public abstract class OperationCallable<O extends Operation<T>, T extends Operat
     private static final Logger logger = LoggerFactory.getLogger(OperationCallable.class);
 
     protected Operation<T> operation;
+    protected final int timeout;
     protected final SidecarClient sidecarClient;
     private final GlobalOperationProgressTracker progressTracker;
     private final String phase;
 
     public OperationCallable(final Operation<T> operation,
+                             final int timeout,
                              final SidecarClient sidecarClient,
                              final GlobalOperationProgressTracker progressTracker,
                              final String phase) {
@@ -37,6 +40,7 @@ public abstract class OperationCallable<O extends Operation<T>, T extends Operat
         this.sidecarClient = sidecarClient;
         this.progressTracker = progressTracker;
         this.phase = phase;
+        this.timeout = timeout;
     }
 
     public abstract OperationResult<O> sendOperation();
@@ -52,24 +56,25 @@ public abstract class OperationCallable<O extends Operation<T>, T extends Operat
 
             logger.info(format("Sent %s operation in phase %s to node %s", operation.type, phase, sidecarClient.getHost()));
 
-            await().timeout(1, HOURS).pollInterval(5, SECONDS).until(() -> {
+            final AtomicReference<Float> floatAtomicReference = new AtomicReference<>((float) 0);
 
-                float lastProgress = 0.0f;
+            await().timeout(timeout, HOURS).pollInterval(5, SECONDS).until(() -> {
 
                 try {
                     if (operationResult.operation != null) {
                         operation = sidecarClient.getOperation(operationResult.operation.id, operation.request);
                         final State returnedState = operation.state;
 
-                        lastProgress += operation.progress;
+                        float delta = operation.progress - floatAtomicReference.get();
+                        floatAtomicReference.set(floatAtomicReference.get() + delta);
 
-                        logger.info(format("Progress of %s against %s of type %s is %s%%",
+                        logger.info(format("Progress of %s against %s of type %s is %.2f%%",
                                            operation.id,
                                            sidecarClient.getHost(),
                                            operation.request.getClass(),
-                                           lastProgress * 100));
+                                           operation.progress * 100));
 
-                        progressTracker.update(operation.progress);
+                        progressTracker.update(delta);
 
                         if (FAILED == returnedState) {
                             throw new OperationCoordinatorException(format("Operation %s of type %s in phase %s against host %s has failed.",

@@ -37,6 +37,7 @@ public class BackupRestoreOperationTest extends AbstractCassandraSidecarTest {
                     null,
                     null,
                     null,
+                    null,
                     cassandraDir.resolve("data"),
                     DatabaseEntities.parse("system_schema," + keyspaceName),
                     "stefansnapshot",
@@ -44,7 +45,8 @@ public class BackupRestoreOperationTest extends AbstractCassandraSidecarTest {
                     "test-sidecar-secret",
                     false,
                     null,
-                    false
+                    false,
+                    null // timeout
             );
 
             final OperationResult<BackupOperation> result = sidecarHolder.sidecarClient.backup(backupOperationRequest);
@@ -76,7 +78,9 @@ public class BackupRestoreOperationTest extends AbstractCassandraSidecarTest {
                     null, // schema version
                     null, // k8s namespace
                     null, // k8s secret name
-                    false // NO GLOBAL REQUEST
+                    false, // NO GLOBAL REQUEST
+                    null, // timeout
+                    false // resolveHostIdFromTopology
             );
 
             sidecarHolder.sidecarClient.waitForCompleted(sidecarHolder.sidecarClient.restore(restoreOperationRequest));

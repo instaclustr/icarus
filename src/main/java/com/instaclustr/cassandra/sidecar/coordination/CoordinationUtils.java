@@ -3,7 +3,6 @@ package com.instaclustr.cassandra.sidecar.coordination;
 import static java.lang.String.format;
 
 import java.net.InetAddress;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -11,44 +10,10 @@ import java.util.UUID;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
-import com.instaclustr.cassandra.backup.impl.interaction.CassandraClusterName;
-import com.instaclustr.cassandra.backup.impl.interaction.CassandraEndpointDC;
-import com.instaclustr.cassandra.backup.impl.interaction.CassandraEndpoints;
 import com.instaclustr.cassandra.sidecar.rest.SidecarClient;
-import com.instaclustr.operations.OperationCoordinator.OperationCoordinatorException;
 import com.instaclustr.sidecar.picocli.SidecarSpec;
-import jmx.org.apache.cassandra.service.CassandraJMXService;
 
 public class CoordinationUtils {
-
-    public static Map<InetAddress, UUID> getEndpoints(final CassandraJMXService cassandraJMXService) throws OperationCoordinatorException {
-        return CoordinationUtils.getEndpoints(cassandraJMXService, null);
-    }
-
-    public static String getClusterName(final CassandraJMXService cassandraJMXService) throws OperationCoordinatorException {
-        try {
-            return new CassandraClusterName(cassandraJMXService).act();
-        } catch (final Exception ex) {
-            throw new OperationCoordinatorException("Unable to get the name of a cluster!", ex);
-        }
-    }
-
-
-    public static Map<InetAddress, UUID> getEndpoints(final CassandraJMXService cassandraJMXService, final String datacenter) throws OperationCoordinatorException {
-        try {
-            return new CassandraEndpoints(cassandraJMXService, datacenter).act();
-        } catch (final Exception ex) {
-            throw new OperationCoordinatorException("Unable to get endpoints!", ex);
-        }
-    }
-
-    public static Map<InetAddress, String> getEndpointsDCs(final CassandraJMXService cassandraJMXService, final Collection<InetAddress> endpoints) throws OperationCoordinatorException {
-        try {
-            return new CassandraEndpointDC(cassandraJMXService, endpoints).act();
-        } catch (final Exception ex) {
-            throw new OperationCoordinatorException("Unable to get DCs of endpoints!", ex);
-        }
-    }
 
     public static Map<InetAddress, SidecarClient> constructSidecars(final String clusterName,
                                                                     final Map<InetAddress, UUID> endpoints,
