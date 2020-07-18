@@ -184,18 +184,7 @@ public abstract class AbstractCassandraSidecarTest {
         sidecarSpec.httpServerAddress = new HttpServerInetSocketAddressTypeConverter().convert(httpAdddress + ":" + httpPort.toString());
         sidecarSpec.operationsExpirationPeriod = new Time(1L, HOURS);
 
-        List<AbstractModule> modules = new Sidecar().getModules(sidecarSpec, cassandraJMXSpec);
-
-        // we expose truncate here via REST so we can truncate via sidecar for test purposes
-        modules.add(new AbstractModule() {
-            @Override
-            protected void configure() {
-                installOperationBindings(binder(),
-                                         "truncate",
-                                         TruncateOperationRequest.class,
-                                         TruncateOperation.class);
-            }
-        });
+        List<AbstractModule> modules = new Sidecar().getModules(sidecarSpec, cassandraJMXSpec, true);
 
         Injector injector = Guice.createInjector(modules);
 

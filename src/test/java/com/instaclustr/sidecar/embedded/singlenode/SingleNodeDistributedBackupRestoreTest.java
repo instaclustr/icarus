@@ -36,6 +36,7 @@ public class SingleNodeDistributedBackupRestoreTest extends AbstractCassandraSid
                 new DataRate(1L, DataRate.DataRateUnit.MBPS), // bandwidth
                 null, // concurrentConnections
                 null, // lockFile
+                null, // metadata
                 cassandraDir.resolve("data"), // cassandra dir
                 DatabaseEntities.parse("system_schema," + keyspaceName), // entities
                 "stefansnapshot", // snapshot

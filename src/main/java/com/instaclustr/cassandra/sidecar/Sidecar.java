@@ -2,6 +2,7 @@ package com.instaclustr.cassandra.sidecar;
 
 import static com.google.inject.Guice.createInjector;
 import static com.google.inject.Stage.PRODUCTION;
+import static com.instaclustr.operations.OperationBindings.installOperationBindings;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,6 +18,8 @@ import com.instaclustr.cassandra.backup.impl.backup.BackupModules.CommitlogBacku
 import com.instaclustr.cassandra.backup.impl.restore.RestoreModules.RestorationStrategyModule;
 import com.instaclustr.cassandra.backup.impl.restore.RestoreModules.RestoreCommitlogModule;
 import com.instaclustr.cassandra.backup.impl.restore.RestoreModules.RestoreModule;
+import com.instaclustr.cassandra.backup.impl.truncate.TruncateOperation;
+import com.instaclustr.cassandra.backup.impl.truncate.TruncateOperationRequest;
 import com.instaclustr.cassandra.sidecar.operations.cleanup.CleanupsModule;
 import com.instaclustr.cassandra.sidecar.operations.decommission.DecommissioningModule;
 import com.instaclustr.cassandra.sidecar.operations.drain.DrainModule;
@@ -40,6 +43,7 @@ import jmx.org.apache.cassandra.CassandraJMXConnectionInfo;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Model.CommandSpec;
+import picocli.CommandLine.Option;
 import picocli.CommandLine.Spec;
 
 @Command(name = "cassandra-sidecar",
@@ -59,6 +63,10 @@ public final class Sidecar extends CLIApplication implements Callable<Void> {
 
     @Spec
     private CommandSpec commandSpec;
+
+    @Option(names = {"--enable-truncate"},
+            description = "If enabled, sidecar will expose truncate operation on REST, defaults to false.")
+    private boolean enableTruncateOperation;
 
     public static void main(String[] args) {
         main(args, true);
@@ -82,7 +90,7 @@ public final class Sidecar extends CLIApplication implements Callable<Void> {
         logCommandVersionInformation(commandSpec);
 
         // production binds singletons as eager by default
-        final Injector injector = createInjector(PRODUCTION, getModules(sidecarSpec, jmxSpec));
+        final Injector injector = createInjector(PRODUCTION, getModules(sidecarSpec, jmxSpec, enableTruncateOperation));
 
         return injector.getInstance(Application.class).call();
     }
@@ -92,12 +100,26 @@ public final class Sidecar extends CLIApplication implements Callable<Void> {
         return "cassandra-sidecar";
     }
 
-    public List<AbstractModule> getModules(SidecarSpec sidecarSpec, CassandraJMXSpec jmxSpec) throws Exception {
+    public List<AbstractModule> getModules(SidecarSpec sidecarSpec,
+                                           CassandraJMXSpec jmxSpec,
+                                           final boolean enableTruncateOperation) throws Exception {
         List<AbstractModule> modules = new ArrayList<>();
 
         modules.addAll(backupModules());
         modules.addAll(operationModules());
         modules.addAll(sidecarModules(sidecarSpec, jmxSpec));
+
+        if (enableTruncateOperation) {
+            modules.add(new AbstractModule() {
+                @Override
+                protected void configure() {
+                    installOperationBindings(binder(),
+                                             "truncate",
+                                             TruncateOperationRequest.class,
+                                             TruncateOperation.class);
+                }
+            });
+        }
 
         return modules;
     }

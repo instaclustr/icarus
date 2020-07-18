@@ -19,7 +19,6 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.TypeLiteral;
-import com.instaclustr.cassandra.sidecar.operations.decommission.DecommissionOperation;
 import com.instaclustr.cassandra.sidecar.operations.decommission.DecommissionOperationRequest;
 import com.instaclustr.sidecar.operations.OperationsResource;
 import com.instaclustr.threading.ExecutorsModule;
@@ -56,7 +55,7 @@ public class SidecarTest {
         }};
 
         final Map<String, Class<? extends OperationRequest>> typeMappings = new HashMap<String, Class<? extends OperationRequest>>() {{
-           put("decommission", DecommissionOperationRequest.class);
+            put("decommission", DecommissionOperationRequest.class);
         }};
 
         final TypeLiteral<Map<Class<? extends OperationRequest>, OperationFactory>> classType = new TypeLiteral<Map<Class<? extends OperationRequest>, OperationFactory>>() {
