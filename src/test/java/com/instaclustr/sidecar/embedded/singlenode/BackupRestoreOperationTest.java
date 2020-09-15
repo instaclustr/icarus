@@ -18,7 +18,6 @@ import com.instaclustr.cassandra.backup.impl.restore.RestoreOperationRequest;
 import com.instaclustr.cassandra.backup.impl.truncate.TruncateOperationRequest;
 import com.instaclustr.cassandra.sidecar.rest.SidecarClient.OperationResult;
 import com.instaclustr.io.FileUtils;
-import com.instaclustr.operations.OperationsService;
 import com.instaclustr.sidecar.embedded.AbstractCassandraSidecarTest;
 import org.testng.annotations.Test;
 
@@ -33,27 +32,26 @@ public class BackupRestoreOperationTest extends AbstractCassandraSidecarTest {
             final BackupOperationRequest backupOperationRequest = new BackupOperationRequest(
                     "backup",
                     new StorageLocation("file://" + target("backup1") + "/cluster/test-dc/1"),
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
+                    null, // duration
+                    null, // bandwidth
+                    null, // concurrent connections
+                    null, // metadata directive
                     cassandraDir.resolve("data"),
                     DatabaseEntities.parse("system_schema," + keyspaceName),
-                    "stefansnapshot",
-                    "default",
-                    "test-sidecar-secret",
-                    false,
-                    null,
-                    false,
-                    null // timeout
+                    "stefansnapshot", // snapshot
+                    "default", // k8s namespace
+                    "test-sidecar-secret", // k8s secret
+                    false, // global request
+                    null, // dc
+                    null, // timeout
+                    false,  // insecure
+                    false, // create missing bucket
+                    null // schemaVersion
             );
 
             final OperationResult<BackupOperation> result = sidecarHolder.sidecarClient.backup(backupOperationRequest);
 
             sidecarHolder.sidecarClient.waitForCompleted(result);
-
-            final OperationsService operationService = sidecarHolder.injector.getInstance(OperationsService.class);
 
             sidecarHolder.sidecarClient.waitForCompleted(sidecarHolder.sidecarClient.truncate(new TruncateOperationRequest(keyspaceName, tableName)));
 
@@ -80,7 +78,8 @@ public class BackupRestoreOperationTest extends AbstractCassandraSidecarTest {
                     null, // k8s secret name
                     false, // NO GLOBAL REQUEST
                     null, // timeout
-                    false // resolveHostIdFromTopology
+                    false, // resolveHostIdFromTopology
+                    false // insecure
             );
 
             sidecarHolder.sidecarClient.waitForCompleted(sidecarHolder.sidecarClient.restore(restoreOperationRequest));

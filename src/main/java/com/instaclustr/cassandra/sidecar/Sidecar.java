@@ -13,8 +13,10 @@ import com.google.inject.Injector;
 import com.instaclustr.cassandra.CassandraModule;
 import com.instaclustr.cassandra.backup.guice.StorageModules;
 import com.instaclustr.cassandra.backup.impl._import.ImportModule;
+import com.instaclustr.cassandra.backup.impl.backup.BackupModules;
 import com.instaclustr.cassandra.backup.impl.backup.BackupModules.BackupModule;
 import com.instaclustr.cassandra.backup.impl.backup.BackupModules.CommitlogBackupModule;
+import com.instaclustr.cassandra.backup.impl.restore.RestoreModules;
 import com.instaclustr.cassandra.backup.impl.restore.RestoreModules.RestorationStrategyModule;
 import com.instaclustr.cassandra.backup.impl.restore.RestoreModules.RestoreCommitlogModule;
 import com.instaclustr.cassandra.backup.impl.restore.RestoreModules.RestoreModule;
@@ -32,6 +34,7 @@ import com.instaclustr.cassandra.sidecar.operations.upgradesstables.UpgradeSSTab
 import com.instaclustr.cassandra.sidecar.service.ServicesModule;
 import com.instaclustr.guice.Application;
 import com.instaclustr.guice.ServiceManagerModule;
+import com.instaclustr.jackson.JacksonModule;
 import com.instaclustr.operations.OperationsModule;
 import com.instaclustr.picocli.CLIApplication;
 import com.instaclustr.picocli.CassandraJMXSpec;
@@ -105,7 +108,7 @@ public final class Sidecar extends CLIApplication implements Callable<Void> {
                                            final boolean enableTruncateOperation) throws Exception {
         List<AbstractModule> modules = new ArrayList<>();
 
-        modules.addAll(backupModules());
+        modules.addAll(backupRestoreModules());
         modules.addAll(operationModules());
         modules.addAll(sidecarModules(sidecarSpec, jmxSpec));
 
@@ -132,10 +135,14 @@ public final class Sidecar extends CLIApplication implements Callable<Void> {
                                                                    jmxSpec.jmxUser,
                                                                    jmxSpec.jmxServiceURL,
                                                                    jmxSpec.trustStore,
-                                                                   jmxSpec.trustStorePassword)));
+                                                                   jmxSpec.trustStorePassword,
+                                                                   jmxSpec.keyStore,
+                                                                   jmxSpec.keyStorePassword,
+                                                                   jmxSpec.jmxClientAuth)));
             add(new JerseyHttpServerModule(sidecarSpec.httpServerAddress));
             add(new OperationsModule(sidecarSpec.operationsExpirationPeriod));
             add(new ExecutorsModule());
+            add(new JacksonModule());
             add(new ServicesModule());
             add(new AbstractModule() {
                 @Override
@@ -146,7 +153,7 @@ public final class Sidecar extends CLIApplication implements Callable<Void> {
         }};
     }
 
-    public static List<AbstractModule> backupModules() {
+    public static List<AbstractModule> backupRestoreModules() {
         return new ArrayList<AbstractModule>() {{
             add(new StorageModules());
             add(new BackupModule());
@@ -154,6 +161,8 @@ public final class Sidecar extends CLIApplication implements Callable<Void> {
             add(new RestoreModule());
             add(new RestoreCommitlogModule());
             add(new RestorationStrategyModule());
+            add(new BackupModules.UploadingModule());
+            add(new RestoreModules.DownloadingModule());
         }};
     }
 

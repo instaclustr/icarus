@@ -4,14 +4,15 @@ import static com.datastax.oss.driver.api.core.type.DataTypes.TEXT;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.insertInto;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.literal;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.selectFrom;
-import static java.lang.String.format;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.github.nosan.embedded.cassandra.api.Cassandra;
@@ -21,6 +22,7 @@ import com.instaclustr.cassandra.sidecar.rest.SidecarClient;
 import com.instaclustr.sidecar.embedded.AbstractCassandraSidecarTest.SidecarHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testng.Assert;
 
 public class DatabaseHelper {
 
@@ -122,9 +124,9 @@ public class DatabaseHelper {
 
     public void dump(String keyspace, String table) {
         try (CqlSession session = new CqlSessionCassandraConnectionFactory().create(currentNode).getConnection()) {
-            session.execute(selectFrom(keyspace, table).all().build()).all().forEach(row -> {
-                logger.info(format("id: %s, name: %s", row.getString("id"), row.getString("name")));
-            });
+            List<Row> all = session.execute(selectFrom(keyspace, table).all().build()).all();
+            Assert.assertFalse(all.isEmpty());
+            all.forEach(row -> logger.info(String.format("id: %s, name: %s", row.getString("id"), row.getString("name"))));
         }
     }
 }

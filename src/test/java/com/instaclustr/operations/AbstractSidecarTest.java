@@ -30,6 +30,7 @@ import com.instaclustr.cassandra.service.CqlSessionService;
 import com.instaclustr.cassandra.sidecar.Sidecar;
 import com.instaclustr.cassandra.sidecar.rest.SidecarClient;
 import com.instaclustr.cassandra.sidecar.rest.SidecarClient.OperationResult;
+import com.instaclustr.jackson.JacksonModule;
 import com.instaclustr.sidecar.http.JerseyHttpServerModule;
 import com.instaclustr.sidecar.http.JerseyHttpServerService;
 import com.instaclustr.threading.ExecutorsModule;
@@ -99,6 +100,7 @@ public abstract class AbstractSidecarTest {
             });
             add(new JerseyHttpServerModule());
             add(new ExecutorsModule());
+            add(new JacksonModule());
             addAll(Sidecar.operationModules());
         }};
 

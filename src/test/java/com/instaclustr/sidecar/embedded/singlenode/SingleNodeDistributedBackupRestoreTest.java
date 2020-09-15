@@ -11,9 +11,11 @@ import java.nio.file.Paths;
 import com.instaclustr.cassandra.backup.impl.DatabaseEntities;
 import com.instaclustr.cassandra.backup.impl.StorageLocation;
 import com.instaclustr.cassandra.backup.impl._import.ImportOperationRequest;
+import com.instaclustr.cassandra.backup.impl.backup.BackupOperation;
 import com.instaclustr.cassandra.backup.impl.backup.BackupOperationRequest;
 import com.instaclustr.cassandra.backup.impl.restore.RestoreOperationRequest;
 import com.instaclustr.cassandra.backup.impl.truncate.TruncateOperationRequest;
+import com.instaclustr.cassandra.sidecar.rest.SidecarClient;
 import com.instaclustr.measure.DataRate;
 import com.instaclustr.sidecar.embedded.AbstractCassandraSidecarTest;
 import org.testng.annotations.Test;
@@ -24,36 +26,30 @@ import org.testng.annotations.Test;
  */
 public class SingleNodeDistributedBackupRestoreTest extends AbstractCassandraSidecarTest {
 
-    @Test
-    public void backupTest() {
-
-        final SidecarHolder sidecarHolder = sidecars.get("datacenter1");
-
-        final BackupOperationRequest backupOperationRequest = new BackupOperationRequest(
+    private BackupOperationRequest createBackupRequest(String snapshotName) {
+        return new BackupOperationRequest(
                 "backup", // type
                 new StorageLocation("file://" + target("backup1") + "/cluster/test-dc/global"), // storage
                 null, // duration
                 new DataRate(1L, DataRate.DataRateUnit.MBPS), // bandwidth
-                null, // concurrentConnections
-                null, // lockFile
+                15, // concurrentConnections
                 null, // metadata
                 cassandraDir.resolve("data"), // cassandra dir
                 DatabaseEntities.parse("system_schema," + keyspaceName), // entities
-                "stefansnapshot", // snapshot
+                snapshotName, // snapshot
                 "default", // k8s namespace
                 "test-sidecar-secret", // k8s secret
                 true, // !!! GLOBAL REQUEST !!!
                 null, // DC is null so will backup all datacenters
-                false, // keep existing snapshot
-                null // timeout
+                null, // timeout
+                false, // insecure
+                true, // create bucket when missing
+                null // schema version
         );
+    }
 
-        sidecarHolder.sidecarClient.waitForCompleted(sidecarHolder.sidecarClient.backup(backupOperationRequest));
-
-
-        sidecarHolder.sidecarClient.waitForCompleted(sidecarHolder.sidecarClient.truncate(new TruncateOperationRequest(keyspaceName, tableName)));
-
-        final RestoreOperationRequest restoreOperationRequest = new RestoreOperationRequest(
+    private RestoreOperationRequest createRestoreOperationRequest(String schemaVersion) {
+        return new RestoreOperationRequest(
                 "restore", // type
                 new StorageLocation("file://" + target("backup1") + "/cluster/test-dc/global"), // storage location
                 null, // concurrent connections
@@ -61,7 +57,7 @@ public class SingleNodeDistributedBackupRestoreTest extends AbstractCassandraSid
                 cassandraDir.resolve("data"), // cassandra dir
                 cassandraDir.resolve("config"), // cassandra config dir
                 false, // restore system keyspace
-                "stefansnapshot", // snapshot
+                "stefansnapshot-" + schemaVersion, // snapshot + schema version, it does not need to be there, just for testing purposes
                 DatabaseEntities.parse(keyspaceName), // entities
                 false, // update cassandra yaml
                 HARDLINKS, // restoration strategy
@@ -76,10 +72,31 @@ public class SingleNodeDistributedBackupRestoreTest extends AbstractCassandraSid
                 null, // k8s secret name
                 true, // !!! GLOBAL REQUEST !!!
                 null, // timeout,
-                false
+                false, // resolve topology
+                false // insecure
         );
+    }
 
-        sidecarHolder.sidecarClient.waitForCompleted(sidecarHolder.sidecarClient.restore(restoreOperationRequest));
+    @Test
+    public void backupTest() {
+
+        final SidecarHolder sidecarHolder = sidecars.get("datacenter1");
+
+        BackupOperationRequest backupOperationRequest1 = createBackupRequest("stefansnapshot");
+        BackupOperationRequest backupOperationRequest2 = createBackupRequest("stefansnapshot2");
+
+        // two concurrent backups
+        SidecarClient.OperationResult<BackupOperation> backup1 = sidecarHolder.sidecarClient.backup(backupOperationRequest1);
+        SidecarClient.OperationResult<BackupOperation> backup2 = sidecarHolder.sidecarClient.backup(backupOperationRequest2);
+
+        sidecarHolder.sidecarClient.waitForCompleted(backup1);
+        sidecarHolder.sidecarClient.waitForCompleted(backup2);
+
+        sidecarHolder.sidecarClient.waitForCompleted(sidecarHolder.sidecarClient.truncate(new TruncateOperationRequest(keyspaceName, tableName)));
+
+        RestoreOperationRequest restoreRequest = createRestoreOperationRequest(sidecarHolder.sidecarClient.getCassandraSchemaVersion().getSchemaVersion());
+
+        sidecarHolder.sidecarClient.waitForCompleted(sidecarHolder.sidecarClient.restore(restoreRequest));
 
         dbHelper.dump(keyspaceName, tableName);
     }

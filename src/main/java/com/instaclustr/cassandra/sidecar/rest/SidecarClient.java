@@ -61,16 +61,21 @@ import com.instaclustr.cassandra.sidecar.operations.scrub.ScrubOperation;
 import com.instaclustr.cassandra.sidecar.operations.scrub.ScrubOperationRequest;
 import com.instaclustr.cassandra.sidecar.operations.upgradesstables.UpgradeSSTablesOperation;
 import com.instaclustr.cassandra.sidecar.operations.upgradesstables.UpgradeSSTablesOperationRequest;
-import com.instaclustr.cassandra.sidecar.service.CassandraSchemaVersionService.CassandraSchemaVersion;
+import com.instaclustr.cassandra.sidecar.service.CassandraService.CassandraSchemaVersion;
 import com.instaclustr.cassandra.sidecar.service.CassandraStatusService.Status;
+import com.instaclustr.cassandra.topology.CassandraClusterTopology.ClusterTopology;
 import com.instaclustr.operations.Operation;
 import com.instaclustr.operations.Operation.State;
 import com.instaclustr.operations.OperationRequest;
 import org.awaitility.Duration;
 import org.awaitility.core.ConditionFactory;
 import org.glassfish.jersey.server.ResourceConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SidecarClient implements Closeable {
+
+    private static final Logger logger = LoggerFactory.getLogger(SidecarClient.class);
 
     private final String rootUrl;
     private final Client client;
@@ -80,6 +85,7 @@ public class SidecarClient implements Closeable {
     private final WebTarget cassandraSchemaWebTarget;
     private final WebTarget cassandraVersionWebTarget;
     private final WebTarget sidecarVersionWebTarget;
+    private final WebTarget cassandraTopologyWebTarget;
 
     private final int port;
     private final String hostAddress;
@@ -106,6 +112,7 @@ public class SidecarClient implements Closeable {
         cassandraSchemaWebTarget = this.client.target(format("%s/version/schema", rootUrl));
         cassandraVersionWebTarget = this.client.target(format("%s/version/cassandra", rootUrl));
         sidecarVersionWebTarget = this.client.target(format("%s/version/sidecar", rootUrl));
+        cassandraTopologyWebTarget = this.client.target(format("%s/topology", rootUrl));
 
         this.clusterName = builder.clusterName;
         this.dc = builder.dc;
@@ -160,6 +167,22 @@ public class SidecarClient implements Closeable {
     public String getSidecarVersion() {
         try {
             return sidecarVersionWebTarget.request(APPLICATION_JSON).get().readEntity(String.class);
+        } catch (final Exception ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    public ClusterTopology getCassandraClusterTopology(final String dc) {
+        try {
+            Response response;
+
+            if (dc != null) {
+                response = cassandraTopologyWebTarget.path(dc).request(APPLICATION_JSON).get();
+            } else {
+                response = cassandraTopologyWebTarget.request(APPLICATION_JSON).get();
+            }
+
+            return response.readEntity(ClusterTopology.class);
         } catch (final Exception ex) {
             throw new RuntimeException(ex);
         }
@@ -284,11 +307,19 @@ public class SidecarClient implements Closeable {
 
         final Response post = operationsWebTarget.request(APPLICATION_JSON).post(Entity.json(operationRequest));
 
+        String stringBody;
+
+        try {
+            stringBody = post.readEntity(String.class);
+            logger.info("\n" + stringBody);
+        } catch (final Exception ex) {
+            throw new IllegalStateException("Unable to read operation back!", ex);
+        }
+
         if (post.getStatusInfo().toEnum() != CREATED) {
             return new OperationResult<O>(null, post);
         }
 
-        final String stringBody = post.readEntity(String.class);
         final JavaType javaType = objectMapper.getTypeFactory().constructParametricType(Operation.class, operationRequest.getClass());
 
         return new OperationResult<>((O) parseString(stringBody, javaType), post);
@@ -320,6 +351,7 @@ public class SidecarClient implements Closeable {
 
     @Override
     public void close() {
+        logger.debug("Closing Sidecar client {}", this.getHost());
         client.close();
     }
 
@@ -459,7 +491,25 @@ public class SidecarClient implements Closeable {
 
         conditionFactory.timeout(1, TimeUnit.HOURS).pollInterval(5, TimeUnit.SECONDS).until(() -> {
 
-            final State returnedState = getOperation(operationResult.operation.id).state;
+            if (operationResult == null) {
+                return false;
+            }
+
+            if (operationResult.operation == null) {
+                return false;
+            }
+
+            if (operationResult.operation.id == null) {
+                return false;
+            }
+
+            final Operation<?> operation = getOperation(operationResult.operation.id);
+
+            if (operation == null) {
+                return false;
+            }
+
+            final State returnedState = operation.state;
 
             if (state == FAILED && state == returnedState) {
                 return true;

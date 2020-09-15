@@ -1,16 +1,18 @@
 package com.instaclustr.cassandra.sidecar.service;
 
 import com.google.inject.Inject;
+import com.instaclustr.cassandra.topology.CassandraClusterTopology;
+import com.instaclustr.cassandra.topology.CassandraClusterTopology.ClusterTopology;
 import com.instaclustr.operations.FunctionWithEx;
 import jmx.org.apache.cassandra.service.CassandraJMXService;
 import jmx.org.apache.cassandra.service.cassandra3.StorageServiceMBean;
 
-public class CassandraSchemaVersionService {
+public class CassandraService {
 
     private final CassandraJMXService cassandraJMXService;
 
     @Inject
-    public CassandraSchemaVersionService(final CassandraJMXService cassandraJMXService) {
+    public CassandraService(final CassandraJMXService cassandraJMXService) {
         this.cassandraJMXService = cassandraJMXService;
     }
 
@@ -31,6 +33,10 @@ public class CassandraSchemaVersionService {
         }
 
         return version;
+    }
+
+    public ClusterTopology getClusterTopology(final String dc) throws Exception {
+        return new CassandraClusterTopology(cassandraJMXService, dc).act();
     }
 
     public static class CassandraSchemaVersion {

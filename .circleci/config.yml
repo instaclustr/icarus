@@ -21,40 +21,13 @@ jobs:
             - ~/.m2
           key: cassandra-sidecar-{{ checksum "pom.xml" }}
 
-      - run: mvn -PsingleNode clean install
+      - run: (echo "${google_application_credentials}" > /tmp/gcp.json) && mvn -PcloudTests clean install
 
       - store_test_results:
-          path: ~/cassandra-sidecar/target/surefire-reports
-  build-java-11:
-
-    working_directory: ~/cassandra-sidecar-java-11
-
-    docker:
-      - image: circleci/openjdk:11-jdk-stretch
-
-    steps:
-
-      - checkout
-
-      - restore_cache:
-          key: cassandra-sidecar-{{ checksum "pom.xml" }}
-
-      - run: mvn dependency:go-offline # gets the project dependencies
-
-      - save_cache:
-          paths:
-            - ~/.m2
-          key: cassandra-sidecar-{{ checksum "pom.xml" }}
-
-      # Cassandra 3.x does not run with Java 11 so we are running with Cassandra 4.0 as tests are running embedded Cassandra instance too
-      - run: mvn -PsingleNode clean install -Dcassandra.version=4.0-alpha3 -Djava.version=11
-
-      - store_test_results:
-          path: ~/cassandra-sidecar/target/surefire-reports
+          path: ~/cassandra-sidecar/target/cassandra-sidecar.jar
 
 workflows:
   version: 2
   build:
     jobs:
-      - build-java-8
-      - build-java-11
+      - build

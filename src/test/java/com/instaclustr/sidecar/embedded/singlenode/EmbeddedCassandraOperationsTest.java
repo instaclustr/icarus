@@ -12,7 +12,7 @@ import com.instaclustr.cassandra.sidecar.operations.flush.FlushOperationRequest;
 import com.instaclustr.cassandra.sidecar.operations.refresh.RefreshOperationRequest;
 import com.instaclustr.cassandra.sidecar.operations.scrub.ScrubOperationRequest;
 import com.instaclustr.cassandra.sidecar.operations.upgradesstables.UpgradeSSTablesOperationRequest;
-import com.instaclustr.cassandra.sidecar.service.CassandraSchemaVersionService.CassandraSchemaVersion;
+import com.instaclustr.cassandra.sidecar.service.CassandraService.CassandraSchemaVersion;
 import com.instaclustr.sidecar.embedded.AbstractCassandraSidecarTest;
 import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;

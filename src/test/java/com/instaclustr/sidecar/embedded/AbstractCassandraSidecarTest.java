@@ -47,7 +47,7 @@ public abstract class AbstractCassandraSidecarTest {
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractCassandraSidecarTest.class);
 
-    protected static final String CASSANDRA_VERSION = System.getProperty("cassandra.version", "3.11.6");
+    protected static final String CASSANDRA_VERSION = System.getProperty("cassandra.version", "3.11.8");
 
     private static Artifact CASSANDRA_ARTIFACT = Artifact.ofVersion(Version.of(CASSANDRA_VERSION));
 
@@ -125,6 +125,8 @@ public abstract class AbstractCassandraSidecarTest {
 
         try {
             Map<String, Cassandra> customNodes = customNodes();
+
+            cassandraInstances.clear();
 
             if (customNodes.isEmpty()) {
                 cassandraInstances.put("datacenter1", defaultNodeFactory().create());

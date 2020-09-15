@@ -3,12 +3,14 @@ package com.instaclustr.cassandra.sidecar.coordination;
 import static com.instaclustr.cassandra.backup.impl.restore.RestorationPhase.RestorationPhaseType.CLEANUP;
 import static com.instaclustr.cassandra.backup.impl.restore.RestorationPhase.RestorationPhaseType.DOWNLOAD;
 import static com.instaclustr.cassandra.backup.impl.restore.RestorationPhase.RestorationPhaseType.IMPORT;
+import static com.instaclustr.cassandra.backup.impl.restore.RestorationPhase.RestorationPhaseType.INIT;
 import static com.instaclustr.cassandra.backup.impl.restore.RestorationPhase.RestorationPhaseType.TRUNCATE;
 import static com.instaclustr.cassandra.sidecar.coordination.CoordinationUtils.constructSidecars;
 import static java.lang.String.format;
 import static java.util.concurrent.CompletableFuture.allOf;
 import static java.util.concurrent.CompletableFuture.supplyAsync;
 
+import java.io.Closeable;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,7 +26,9 @@ import java.util.concurrent.ExecutorService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
+import com.instaclustr.cassandra.backup.guice.BucketServiceFactory;
 import com.instaclustr.cassandra.backup.guice.RestorerFactory;
+import com.instaclustr.cassandra.backup.impl.BucketService;
 import com.instaclustr.cassandra.backup.impl.StorageLocation;
 import com.instaclustr.cassandra.backup.impl.restore.RestorationPhase.RestorationPhaseType;
 import com.instaclustr.cassandra.backup.impl.restore.RestorationPhaseResultGatherer;
@@ -42,8 +46,12 @@ import com.instaclustr.operations.ResultGatherer;
 import com.instaclustr.sidecar.picocli.SidecarSpec;
 import com.instaclustr.threading.Executors.ExecutorServiceSupplier;
 import jmx.org.apache.cassandra.service.CassandraJMXService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SidecarRestoreOperationCoordinator extends BaseRestoreOperationCoordinator {
+
+    private static final Logger logger = LoggerFactory.getLogger(SidecarBackupOperationCoordinator.class);
 
     private final CassandraJMXService cassandraJMXService;
     private final SidecarSpec sidecarSpec;
@@ -51,6 +59,7 @@ public class SidecarRestoreOperationCoordinator extends BaseRestoreOperationCoor
     private final ExecutorServiceSupplier executorServiceSupplier;
     private final OperationsService operationsService;
     private final ObjectMapper objectMapper;
+    private final Map<String, BucketServiceFactory> bucketServiceFactoryMap;
 
     @Inject
     public SidecarRestoreOperationCoordinator(final Map<String, RestorerFactory> restorerFactoryMap,
@@ -59,17 +68,26 @@ public class SidecarRestoreOperationCoordinator extends BaseRestoreOperationCoor
                                               final SidecarSpec sidecarSpec,
                                               final ExecutorServiceSupplier executorServiceSupplier,
                                               final OperationsService operationsService,
-                                              final ObjectMapper objectMapper) {
+                                              final ObjectMapper objectMapper,
+                                              final Map<String, BucketServiceFactory> bucketServiceFactoryMap) {
         super(restorerFactoryMap, restorationStrategyResolver);
         this.cassandraJMXService = cassandraJMXService;
         this.sidecarSpec = sidecarSpec;
         this.executorServiceSupplier = executorServiceSupplier;
         this.operationsService = operationsService;
         this.objectMapper = objectMapper;
+        this.bucketServiceFactoryMap = bucketServiceFactoryMap;
     }
 
     @Override
     public ResultGatherer<RestoreOperationRequest> coordinate(final Operation<RestoreOperationRequest> operation) throws OperationCoordinatorException {
+
+        try (final BucketService bucketService = bucketServiceFactoryMap.get(operation.request.storageLocation.storageProvider).createBucketService(operation.request)) {
+            bucketService.checkBucket(operation.request.storageLocation.bucket, false);
+        } catch (final Exception ex) {
+            throw new OperationCoordinatorException(format("Bucket %s does not exist or we could not determine its existence.",
+                                                           operation.request.storageLocation.bucket), ex);
+        }
 
         /*
          * I receive a request
@@ -144,26 +162,21 @@ public class SidecarRestoreOperationCoordinator extends BaseRestoreOperationCoor
 
         final RestorationPhaseResultGatherer gatherer = new RestorationPhaseResultGatherer();
 
-        try {
-            gatherer.combine(executePhaseOnAllNodes(new DownloadPhasePreparation(), operation));
+        try (final ClientsWrapper clientsWrapper = new ClientsWrapper(getSidecarClients())) {
+            final ClientsWrapper oneClient = getOneClient(clientsWrapper);
 
-            if (gatherer.hasErrors()) {
-                return gatherer;
+            final ResultSupplier[] resultSuppliers = new ResultSupplier[]{
+                    () -> gatherer.combine(executePhase(new InitPhasePreparation(), operation, oneClient)),
+                    () -> gatherer.combine(executePhase(new DownloadPhasePreparation(), operation, clientsWrapper)),
+                    () -> gatherer.combine(executePhase(new TruncatePhasePreparation(), operation, oneClient)),
+                    () -> gatherer.combine(executePhase(new ImportingPhasePreparation(), operation, clientsWrapper)),
+                    () -> gatherer.combine(executePhase(new CleaningPhasePreparation(), operation, clientsWrapper)),
+            };
+
+            for (final ResultSupplier supplier : resultSuppliers) {
+                if (supplier.getWithEx().hasErrors())
+                    return gatherer;
             }
-
-            gatherer.combine(executePhaseOnRandomNode(new TruncatePhasePreparation(), operation));
-
-            if (gatherer.hasErrors()) {
-                return gatherer;
-            }
-
-            gatherer.combine(executePhaseOnAllNodes(new ImportingPhasePreparation(), operation));
-
-            if (gatherer.hasErrors()) {
-                return gatherer;
-            }
-
-            gatherer.combine(executePhaseOnAllNodes(new CleaningPhasePreparation(), operation));
         } catch (final Exception ex) {
             gatherer.gather(operation, new OperationCoordinatorException("Unable to coordinate distributed restore.", ex));
         }
@@ -171,37 +184,75 @@ public class SidecarRestoreOperationCoordinator extends BaseRestoreOperationCoor
         return gatherer;
     }
 
-    private Map<InetAddress, SidecarClient> getOneClient(final Map<InetAddress, SidecarClient> sidecarClientMap) {
-        final Iterator<Entry<InetAddress, SidecarClient>> it = sidecarClientMap.entrySet().iterator();
+    public static class ClientsWrapper implements Closeable {
+        public Map<InetAddress, SidecarClient> sidecarClients;
 
-        if (it.hasNext()) {
-
-            Entry<InetAddress, SidecarClient> next = it.next();
-
-            return new HashMap<InetAddress, SidecarClient>() {{
-                put(next.getKey(), next.getValue());
-            }};
+        public ClientsWrapper(final Map<InetAddress, SidecarClient> sidecarClients) {
+            this.sidecarClients = sidecarClients;
         }
 
-        throw new IllegalStateException("There is no client to send truncate request to!");
+        @Override
+        public void close() {
+            if (sidecarClients != null) {
+                for (final SidecarClient sidecarClient : sidecarClients.values()) {
+                    if (sidecarClient != null) {
+                        try {
+                            sidecarClient.close();
+                        } catch (final Exception ex) {
+                            logger.error("Unable to close the client {}", sidecarClient);
+                        }
+                    }
+                }
+            }
+        }
     }
 
-    private interface PhasePreparation {
+    @FunctionalInterface
+    private interface ResultSupplier {
 
-        Operation<RestoreOperationRequest> prepare(final SidecarClient client, final RestoreOperationRequest request) throws OperationCoordinatorException;
+        ResultGatherer<RestoreOperationRequest> getWithEx() throws Exception;
+    }
 
-        RestorationPhaseType getPhaseType();
+    private ClientsWrapper getOneClient(final ClientsWrapper sidecarWrapper) {
+        if (sidecarWrapper.sidecarClients != null) {
+            final Iterator<Entry<InetAddress, SidecarClient>> it = sidecarWrapper.sidecarClients.entrySet().iterator();
 
-        default RestoreOperation cloneOp(final RestoreOperationRequest request) throws CloneNotSupportedException {
+            if (it.hasNext()) {
+                final Entry<InetAddress, SidecarClient> next = it.next();
+                return new ClientsWrapper(new HashMap<InetAddress, SidecarClient>() {{
+                    put(next.getKey(), next.getValue());
+                }});
+            }
+        }
+
+        throw new IllegalStateException("Unable to detect what client belong to this node!");
+    }
+
+    private static abstract class PhasePreparation {
+
+        Operation<RestoreOperationRequest> prepare(final SidecarClient client, final RestoreOperationRequest request) throws OperationCoordinatorException {
+            try {
+                final RestoreOperation restoreOperation = cloneOp(request);
+                prepareBasics(restoreOperation.request, client);
+                restoreOperation.request.restorationPhase = getPhaseType();
+
+                return restoreOperation;
+            } catch (final Exception ex) {
+                throw new OperationCoordinatorException(format("Unable to prepare operation for %s phase.", getPhaseType()), ex);
+            }
+        }
+
+        abstract RestorationPhaseType getPhaseType();
+
+        RestoreOperation cloneOp(final RestoreOperationRequest request) throws CloneNotSupportedException {
             final RestoreOperationRequest clonedRequest = (RestoreOperationRequest) request.clone();
             return new RestoreOperation(clonedRequest);
         }
 
-
-        default void prepareBasics(final RestoreOperationRequest request, final SidecarClient client) throws OperationCoordinatorException {
+        void prepareBasics(final RestoreOperationRequest request, final SidecarClient client) throws OperationCoordinatorException {
 
             if (!client.getHostId().isPresent()) {
-                throw new OperationCoordinatorException(String.format("There is not any hostId for client %s", client.getHost()));
+                throw new OperationCoordinatorException(format("There is not any hostId for client %s", client.getHost()));
             }
 
             request.storageLocation = StorageLocation.update(request.storageLocation, client.getClusterName(), client.getDc(), client.getHostId().get().toString());
@@ -210,127 +261,60 @@ public class SidecarRestoreOperationCoordinator extends BaseRestoreOperationCoor
         }
     }
 
-    private static final class DownloadPhasePreparation implements PhasePreparation {
-
-        @Override
-        public Operation<RestoreOperationRequest> prepare(final SidecarClient client, final RestoreOperationRequest request) throws OperationCoordinatorException {
-            try {
-                if (!client.getHostId().isPresent()) {
-                    throw new OperationCoordinatorException(format("There is not any hostId for client %s", client.getHost()));
-                }
-
-                final RestoreOperation restoreOperation = cloneOp(request);
-                prepareBasics(restoreOperation.request, client);
-                restoreOperation.request.restorationPhase = DOWNLOAD;
-
-                return restoreOperation;
-            } catch (final Exception ex) {
-                throw new OperationCoordinatorException(format("Unable to prepare operation for %s phase.", DOWNLOAD), ex);
-            }
-        }
-
+    private static final class DownloadPhasePreparation extends PhasePreparation {
         @Override
         public RestorationPhaseType getPhaseType() {
             return DOWNLOAD;
         }
     }
 
-    private static final class TruncatePhasePreparation implements PhasePreparation {
-
-        @Override
-        public Operation<RestoreOperationRequest> prepare(final SidecarClient client, final RestoreOperationRequest request) throws OperationCoordinatorException {
-            try {
-                final RestoreOperation restoreOperation = cloneOp(request);
-                prepareBasics(restoreOperation.request, client);
-                restoreOperation.request.restorationPhase = TRUNCATE;
-
-                return restoreOperation;
-            } catch (final Exception ex) {
-                throw new OperationCoordinatorException(format("Unable to prepare operation for %s phase.", TRUNCATE), ex);
-            }
-        }
-
+    private static final class TruncatePhasePreparation extends PhasePreparation {
         @Override
         public RestorationPhaseType getPhaseType() {
             return TRUNCATE;
         }
     }
 
-    private static final class ImportingPhasePreparation implements PhasePreparation {
-
-        @Override
-        public Operation<RestoreOperationRequest> prepare(final SidecarClient client, final RestoreOperationRequest request) throws OperationCoordinatorException {
-            try {
-                final RestoreOperation restoreOperation = cloneOp(request);
-                prepareBasics(restoreOperation.request, client);
-                restoreOperation.request.restorationPhase = IMPORT;
-
-                return restoreOperation;
-            } catch (final Exception ex) {
-                throw new OperationCoordinatorException(format("Unable to prepare operation for %s phase.", IMPORT), ex);
-            }
-        }
-
+    private static final class ImportingPhasePreparation extends PhasePreparation {
         @Override
         public RestorationPhaseType getPhaseType() {
             return IMPORT;
         }
     }
 
-    private static final class CleaningPhasePreparation implements PhasePreparation {
-
-        @Override
-        public Operation<RestoreOperationRequest> prepare(final SidecarClient client, final RestoreOperationRequest request) throws OperationCoordinatorException {
-            try {
-                final RestoreOperation restoreOperation = cloneOp(request);
-                prepareBasics(restoreOperation.request, client);
-                restoreOperation.request.restorationPhase = CLEANUP;
-
-                return restoreOperation;
-            } catch (final Exception ex) {
-                throw new OperationCoordinatorException(format("Unable to prepare operation for %s phase.", CLEANUP), ex);
-            }
-        }
-
+    private static final class CleaningPhasePreparation extends PhasePreparation {
         @Override
         public RestorationPhaseType getPhaseType() {
             return CLEANUP;
         }
     }
 
-    private RestorationPhaseResultGatherer executePhaseOnRandomNode(final PhasePreparation phasePreparation,
-                                                                    final Operation<RestoreOperationRequest> globalOperation) throws Exception {
-
-        Map<InetAddress, SidecarClient> oneClient = getOneClient(getSidecarClients());
-
-        return executeDistributedPhase(phasePreparation, globalOperation, oneClient);
+    private static final class InitPhasePreparation extends PhasePreparation {
+        @Override
+        RestorationPhaseType getPhaseType() {
+            return INIT;
+        }
     }
-
-    private RestorationPhaseResultGatherer executePhaseOnAllNodes(final PhasePreparation phasePreparation,
-                                                                  final Operation<RestoreOperationRequest> globalOperation) throws Exception {
-        return executeDistributedPhase(phasePreparation, globalOperation, getSidecarClients());
-    }
-
 
     private Map<InetAddress, SidecarClient> getSidecarClients() throws Exception {
         final ClusterTopology clusterTopology = new CassandraClusterTopology(cassandraJMXService, null).act();
         return constructSidecars(clusterTopology.clusterName, clusterTopology.endpoints, clusterTopology.endpointDcs, sidecarSpec, objectMapper);
     }
 
-    private RestorationPhaseResultGatherer executeDistributedPhase(final PhasePreparation phasePreparation,
-                                                                   final Operation<RestoreOperationRequest> globalOperation,
-                                                                   final Map<InetAddress, SidecarClient> sidecarClientMap) throws OperationCoordinatorException {
+    private RestorationPhaseResultGatherer executePhase(final PhasePreparation phasePreparation,
+                                                        final Operation<RestoreOperationRequest> globalOperation,
+                                                        final ClientsWrapper clientsWrapper) throws OperationCoordinatorException {
         final ExecutorService executorService = executorServiceSupplier.get(MAX_NUMBER_OF_CONCURRENT_OPERATIONS);
 
         final RestorationPhaseResultGatherer resultGatherer = new RestorationPhaseResultGatherer();
 
         try {
             final List<RestoreOperationCallable> callables = new ArrayList<>();
-            final GlobalOperationProgressTracker progressTracker = new GlobalOperationProgressTracker(globalOperation, sidecarClientMap.entrySet().size());
+            final GlobalOperationProgressTracker progressTracker = new GlobalOperationProgressTracker(globalOperation, clientsWrapper.sidecarClients.entrySet().size());
 
             // create
 
-            for (final Entry<InetAddress, SidecarClient> entry : sidecarClientMap.entrySet()) {
+            for (final Entry<InetAddress, SidecarClient> entry : clientsWrapper.sidecarClients.entrySet()) {
                 callables.add(new RestoreOperationCallable(phasePreparation.prepare(entry.getValue(), globalOperation.request),
                                                            entry.getValue(),
                                                            progressTracker));

@@ -10,8 +10,8 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Response;
 
 import com.instaclustr.cassandra.CassandraVersion;
-import com.instaclustr.cassandra.sidecar.service.CassandraSchemaVersionService;
-import com.instaclustr.cassandra.sidecar.service.CassandraSchemaVersionService.CassandraSchemaVersion;
+import com.instaclustr.cassandra.sidecar.service.CassandraService;
+import com.instaclustr.cassandra.sidecar.service.CassandraService.CassandraSchemaVersion;
 import com.instaclustr.version.Version;
 
 @Path("/version")
@@ -20,15 +20,15 @@ public class VersionResource {
 
     private final Version version;
     private final Provider<CassandraVersion> cassandraVersion;
-    private final CassandraSchemaVersionService cassandraSchemaVersionService;
+    private final CassandraService cassandraService;
 
     @Inject
     public VersionResource(final Version version,
                            final Provider<CassandraVersion> cassandraVersion,
-                           final CassandraSchemaVersionService cassandraSchemaVersionService) {
+                           final CassandraService cassandraService) {
         this.version = version;
         this.cassandraVersion = cassandraVersion;
-        this.cassandraSchemaVersionService = cassandraSchemaVersionService;
+        this.cassandraService = cassandraService;
     }
 
     @GET
@@ -51,10 +51,10 @@ public class VersionResource {
     @GET
     @Path("schema")
     public Response getCassandraSchemaVersion() {
-        final CassandraSchemaVersion schemaVersion = cassandraSchemaVersionService.getCassandraSchemaVersion();
+        final CassandraSchemaVersion schemaVersion = cassandraService.getCassandraSchemaVersion();
 
         if (schemaVersion.getException() != null) {
-            return Response.serverError().entity(schemaVersion).build();
+            return Response.serverError().entity(schemaVersion.getException()).build();
         }
 
         return Response.ok(schemaVersion).build();
