@@ -1,8 +1,8 @@
 package com.instaclustr.cassandra.sidecar.operations.restart;
 
-import com.google.inject.AbstractModule;
-
 import static com.instaclustr.operations.OperationBindings.installOperationBindings;
+
+import com.google.inject.AbstractModule;
 
 public class RestartModule extends AbstractModule {
     @Override
@@ -11,5 +11,10 @@ public class RestartModule extends AbstractModule {
                                  "restart",
                                  RestartOperationRequest.class,
                                  RestartOperation.class);
+
+        installOperationBindings(binder(),
+                                 "restart-sidecar",
+                                 RestartSidecarOperationRequest.class,
+                                 RestartSidecarOperation.class);
     }
 }

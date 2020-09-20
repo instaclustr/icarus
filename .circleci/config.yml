@@ -1,6 +1,6 @@
 version: 2
 jobs:
-  build-java-8:
+  build:
 
     working_directory: ~/cassandra-sidecar
 
