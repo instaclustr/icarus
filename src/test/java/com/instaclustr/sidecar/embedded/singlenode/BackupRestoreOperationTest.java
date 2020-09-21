@@ -79,7 +79,8 @@ public class BackupRestoreOperationTest extends AbstractCassandraSidecarTest {
                     false, // NO GLOBAL REQUEST
                     null, // timeout
                     false, // resolveHostIdFromTopology
-                    false // insecure
+                    false, // insecure
+                    false // newCluster
             );
 
             sidecarHolder.sidecarClient.waitForCompleted(sidecarHolder.sidecarClient.restore(restoreOperationRequest));

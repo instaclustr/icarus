@@ -126,7 +126,8 @@ public abstract class AbstractSingleNodeBackupFromScratchRestoreTest extends Abs
                 false, // !!! GLOBAL REQUEST !!!
                 null, // timeout,
                 true, // resolve topology
-                false // insecure
+                false, // insecure
+                false
         );
     }
 

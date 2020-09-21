@@ -73,7 +73,8 @@ public class SingleNodeDistributedBackupRestoreTest extends AbstractCassandraSid
                 true, // !!! GLOBAL REQUEST !!!
                 null, // timeout,
                 false, // resolve topology
-                false // insecure
+                false, // insecure
+                false // newCluster
         );
     }
 

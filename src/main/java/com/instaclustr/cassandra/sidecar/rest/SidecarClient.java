@@ -57,8 +57,8 @@ import com.instaclustr.cassandra.sidecar.operations.refresh.RefreshOperation;
 import com.instaclustr.cassandra.sidecar.operations.refresh.RefreshOperationRequest;
 import com.instaclustr.cassandra.sidecar.operations.restart.RestartOperation;
 import com.instaclustr.cassandra.sidecar.operations.restart.RestartOperationRequest;
-import com.instaclustr.cassandra.sidecar.operations.restart.RestartSidecarOperation;
-import com.instaclustr.cassandra.sidecar.operations.restart.RestartSidecarOperationRequest;
+import com.instaclustr.cassandra.sidecar.operations.sidecar.StopSidecarOperation;
+import com.instaclustr.cassandra.sidecar.operations.sidecar.StopSidecarOperationRequest;
 import com.instaclustr.cassandra.sidecar.operations.scrub.ScrubOperation;
 import com.instaclustr.cassandra.sidecar.operations.scrub.ScrubOperationRequest;
 import com.instaclustr.cassandra.sidecar.operations.upgradesstables.UpgradeSSTablesOperation;
@@ -250,7 +250,7 @@ public class SidecarClient implements Closeable {
         return performOperationSubmission(operationRequest);
     }
 
-    public OperationResult<RestartSidecarOperation> restartSidecarOperation(final RestartSidecarOperationRequest operationRequest) {
+    public OperationResult<StopSidecarOperation> stopSidecarOperation(final StopSidecarOperationRequest operationRequest) {
         return performOperationSubmission(operationRequest);
     }
 

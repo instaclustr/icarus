@@ -30,6 +30,7 @@ import com.instaclustr.cassandra.sidecar.operations.rebuild.RebuildModule;
 import com.instaclustr.cassandra.sidecar.operations.refresh.RefreshModule;
 import com.instaclustr.cassandra.sidecar.operations.restart.RestartModule;
 import com.instaclustr.cassandra.sidecar.operations.scrub.ScrubModule;
+import com.instaclustr.cassandra.sidecar.operations.sidecar.SidecarModule;
 import com.instaclustr.cassandra.sidecar.operations.upgradesstables.UpgradeSSTablesModule;
 import com.instaclustr.cassandra.sidecar.service.ServicesModule;
 import com.instaclustr.guice.Application;
@@ -175,6 +176,7 @@ public final class Sidecar extends CLIApplication implements Callable<Void> {
             add(new ScrubModule());
             add(new DrainModule());
             add(new RestartModule());
+            add(new SidecarModule());
             add(new RefreshModule());
             add(new FlushModule());
             add(new ImportModule());

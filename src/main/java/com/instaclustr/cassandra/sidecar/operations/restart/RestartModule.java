@@ -11,10 +11,5 @@ public class RestartModule extends AbstractModule {
                                  "restart",
                                  RestartOperationRequest.class,
                                  RestartOperation.class);
-
-        installOperationBindings(binder(),
-                                 "restart-sidecar",
-                                 RestartSidecarOperationRequest.class,
-                                 RestartSidecarOperation.class);
     }
 }
