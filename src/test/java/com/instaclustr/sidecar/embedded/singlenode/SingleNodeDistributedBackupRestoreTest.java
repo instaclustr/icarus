@@ -44,7 +44,9 @@ public class SingleNodeDistributedBackupRestoreTest extends AbstractCassandraSid
                 null, // timeout
                 false, // insecure
                 true, // create bucket when missing
-                null // schema version
+                false, // skip bucket verification
+                null, // schema version
+                false // topology file, even it is false, global request does not care, it will upload it anyway
         );
     }
 
@@ -74,7 +76,8 @@ public class SingleNodeDistributedBackupRestoreTest extends AbstractCassandraSid
                 null, // timeout,
                 false, // resolve topology
                 false, // insecure
-                false // newCluster
+                false, // newCluster
+                false // skip bucket verification
         );
     }
 

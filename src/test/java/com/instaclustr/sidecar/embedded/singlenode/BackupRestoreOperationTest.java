@@ -46,7 +46,9 @@ public class BackupRestoreOperationTest extends AbstractCassandraSidecarTest {
                     null, // timeout
                     false,  // insecure
                     false, // create missing bucket
-                    null // schemaVersion
+                    false, // skip bucket verification
+                    null, // schemaVersion,
+                    false // upload topology
             );
 
             final OperationResult<BackupOperation> result = sidecarHolder.sidecarClient.backup(backupOperationRequest);
@@ -80,7 +82,8 @@ public class BackupRestoreOperationTest extends AbstractCassandraSidecarTest {
                     null, // timeout
                     false, // resolveHostIdFromTopology
                     false, // insecure
-                    false // newCluster
+                    false, // newCluster
+                    false
             );
 
             sidecarHolder.sidecarClient.waitForCompleted(sidecarHolder.sidecarClient.restore(restoreOperationRequest));

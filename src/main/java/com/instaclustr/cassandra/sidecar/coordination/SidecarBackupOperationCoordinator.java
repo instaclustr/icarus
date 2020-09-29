@@ -6,12 +6,9 @@ import static java.util.concurrent.CompletableFuture.allOf;
 import static java.util.concurrent.CompletableFuture.supplyAsync;
 
 import java.net.InetAddress;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -79,21 +76,13 @@ public class SidecarBackupOperationCoordinator extends BaseBackupOperationCoordi
             return new BackupPhaseResultGatherer().gather(operation, new OperationCoordinatorException("Unable to get cluster topology.", ex));
         }
 
-        final Map<InetAddress, UUID> endpoints = topology.endpoints;
+        logger.info("Resolved datacenter: {}", operation.request.dc == null ? "all of them" : operation.request.dc);
 
-        logger.info("Datacenter to be backed up: {}", operation.request.dc == null ? "all of them" : operation.request.dc);
-
-        logger.info("Resolved endpoints: {}", endpoints.toString());
-
-        final Map<InetAddress, String> endpointDCs = topology.endpointDcs;
-
-        logger.info("Resolved endpoints and their dc: {}", endpointDCs.toString());
-
-        final String clusterName = topology.clusterName;
-
-        logger.info("Resolved cluster name: {}", clusterName);
-
-        final Map<InetAddress, SidecarClient> sidecarClientMap = constructSidecars(clusterName, endpoints, endpointDCs, sidecarSpec, objectMapper);
+        final Map<InetAddress, SidecarClient> sidecarClientMap = constructSidecars(topology.clusterName,
+                                                                                   topology.endpoints,
+                                                                                   topology.endpointDcs,
+                                                                                   sidecarSpec,
+                                                                                   objectMapper);
 
         logger.info("Executing backup requests against {}", sidecarClientMap.toString());
 
@@ -113,6 +102,8 @@ public class SidecarBackupOperationCoordinator extends BaseBackupOperationCoordi
                 final BackupOperationRequest clonedRequest = (BackupOperationRequest) globalRequest.clone();
                 final BackupOperation backupOperation = new BackupOperation(clonedRequest);
                 backupOperation.request.globalRequest = false;
+                // if this is a global request, we upload cluster topology just once, from coordinator
+                backupOperation.request.uploadClusterTopology = false;
 
                 backupOperation.request.storageLocation = StorageLocation.update(backupOperation.request.storageLocation,
                                                                                  client.getClusterName(),
@@ -128,28 +119,18 @@ public class SidecarBackupOperationCoordinator extends BaseBackupOperationCoordi
         };
 
 
-        BackupPhaseResultGatherer backupPhaseResultGatherer = executeDistributedBackup(operation,
-                                                                                       sidecarClientMap,
-                                                                                       backupRequestPreparation,
-                                                                                       topology);
+        final BackupPhaseResultGatherer backupPhaseResultGatherer = executeDistributedBackup(operation,
+                                                                                             sidecarClientMap,
+                                                                                             backupRequestPreparation,
+                                                                                             topology);
 
         if (backupPhaseResultGatherer.hasErrors()) {
             return backupPhaseResultGatherer;
         }
 
-        try {
-            final String clusterTopologyString = ClusterTopology.writeToString(objectMapper, topology);
-
-            final String clusterId = sidecarClientMap.entrySet().iterator().next().getValue().getClusterName();
-
-            final Path topologyPath = Paths.get(format("topology/%s-%s-topology.json", clusterId, operation.request.snapshotTag));
-
-            logger.info("Uploading cluster topology under {}", topologyPath);
-            logger.info("\n" + clusterTopologyString);
-
-            try (Backuper backuper = backuperFactoryMap.get(operation.request.storageLocation.storageProvider).createBackuper(operation.request)) {
-                backuper.uploadText(clusterTopologyString, backuper.objectKeyToRemoteReference(topologyPath));
-            }
+        // we do not look if uploadClusterTopology is true or not, global request coordinator will upload it every time
+        try (final Backuper backuper = backuperFactoryMap.get(operation.request.storageLocation.storageProvider).createBackuper(operation.request)) {
+            ClusterTopology.upload(backuper, topology, objectMapper, operation.request.snapshotTag);
         } catch (final Exception ex) {
             backupPhaseResultGatherer.gather(operation, new OperationCoordinatorException("Unable to upload topology file", ex));
         }
