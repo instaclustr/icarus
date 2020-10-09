@@ -24,13 +24,13 @@ public abstract class AbstractSingleNodeBackupFromScratchRestoreTest extends Abs
 
     protected void backupTest(String cloud) throws Exception {
 
-        AbstractCassandraIcarusTest.SidecarHolder sidecarHolder = sidecars.get("datacenter1");
+        IcarusHolder icarusHolder = icaruses.get("datacenter1");
 
-        CassandraClusterTopology.ClusterTopology topology = sidecarHolder.icarusClient.getCassandraClusterTopology("datacenter1");
+        CassandraClusterTopology.ClusterTopology topology = icarusHolder.icarusClient.getCassandraClusterTopology("datacenter1");
 
         BackupOperationRequest backupOperationRequest1 = createBackupRequest(cloud, "snapshot1", topology);
 
-        sidecarHolder.icarusClient.waitForCompleted(sidecarHolder.icarusClient.backup(backupOperationRequest1));
+        icarusHolder.icarusClient.waitForCompleted(icarusHolder.icarusClient.backup(backupOperationRequest1));
 
         stopNodes();
 
@@ -40,11 +40,11 @@ public abstract class AbstractSingleNodeBackupFromScratchRestoreTest extends Abs
 
         RestoreOperationRequest restoreOperationRequest = createRestoreOperationRequest(cloud, "snapshot1", topology);
 
-        sidecarHolder.icarusClient.waitForCompleted(sidecarHolder.icarusClient.restore(restoreOperationRequest));
+        icarusHolder.icarusClient.waitForCompleted(icarusHolder.icarusClient.restore(restoreOperationRequest));
 
         startNodes();
 
-        DatabaseHelper helper = new DatabaseHelper(cassandraInstances, sidecars);
+        DatabaseHelper helper = new DatabaseHelper(cassandraInstances, icaruses);
 
         helper.dump(keyspaceName, tableName);
     }

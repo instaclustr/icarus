@@ -9,8 +9,8 @@ import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.instaclustr.esop.impl.backup.BackupOperationRequest;
 import com.instaclustr.esop.impl.restore.RestoreOperationRequest;
-import com.instaclustr.icarus.coordination.SidecarBackupOperationCoordinator;
-import com.instaclustr.icarus.coordination.SidecarRestoreOperationCoordinator;
+import com.instaclustr.icarus.coordination.IcarusBackupOperationCoordinator;
+import com.instaclustr.icarus.coordination.IcarusRestoreOperationCoordinator;
 import com.instaclustr.operations.OperationCoordinator;
 import jmx.org.apache.cassandra.service.CassandraJMXService;
 
@@ -31,7 +31,7 @@ public class ServicesModule extends AbstractModule {
         @SuppressWarnings("unchecked") final TypeLiteral<OperationCoordinator<BackupOperationRequest>> backupOperationCoordinator =
                 (TypeLiteral<OperationCoordinator<BackupOperationRequest>>) TypeLiteral.get(newParameterizedType(OperationCoordinator.class, BackupOperationRequest.class));
 
-        newOptionalBinder(binder(), operationCoordinator).setBinding().to(SidecarRestoreOperationCoordinator.class);
-        newOptionalBinder(binder(), backupOperationCoordinator).setBinding().to(SidecarBackupOperationCoordinator.class);
+        newOptionalBinder(binder(), operationCoordinator).setBinding().to(IcarusRestoreOperationCoordinator.class);
+        newOptionalBinder(binder(), backupOperationCoordinator).setBinding().to(IcarusBackupOperationCoordinator.class);
     }
 }

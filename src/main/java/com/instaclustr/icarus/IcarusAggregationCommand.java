@@ -32,7 +32,7 @@ public class IcarusAggregationCommand extends CLIApplication implements Runnable
 
     @Override
     public String getImplementationTitle() {
-        return "sidecar-aggregator";
+        return "icarus-aggregator";
     }
 
     @Override

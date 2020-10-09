@@ -24,13 +24,12 @@ import com.instaclustr.esop.impl.backup.BackupPhaseResultGatherer;
 import com.instaclustr.esop.impl.backup.Backuper;
 import com.instaclustr.esop.impl.backup.UploadTracker;
 import com.instaclustr.esop.impl.backup.coordination.BaseBackupOperationCoordinator;
-import com.instaclustr.icarus.rest.IcarusClient;
-import com.instaclustr.icarus.rest.IcarusClient.OperationResult;
 import com.instaclustr.esop.topology.CassandraClusterTopology;
 import com.instaclustr.esop.topology.CassandraClusterTopology.ClusterTopology;
+import com.instaclustr.icarus.rest.IcarusClient;
+import com.instaclustr.icarus.rest.IcarusClient.OperationResult;
 import com.instaclustr.operations.GlobalOperationProgressTracker;
 import com.instaclustr.operations.Operation;
-import com.instaclustr.operations.OperationsService;
 import com.instaclustr.operations.ResultGatherer;
 import com.instaclustr.sidecar.picocli.SidecarSpec;
 import com.instaclustr.threading.Executors.ExecutorServiceSupplier;
@@ -38,26 +37,25 @@ import jmx.org.apache.cassandra.service.CassandraJMXService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SidecarBackupOperationCoordinator extends BaseBackupOperationCoordinator {
+public class IcarusBackupOperationCoordinator extends BaseBackupOperationCoordinator {
 
     private static final int MAX_NUMBER_OF_CONCURRENT_OPERATIONS = Integer.parseInt(System.getProperty("instaclustr.sidecar.operations.executor.size", "100"));
 
-    private static final Logger logger = LoggerFactory.getLogger(SidecarBackupOperationCoordinator.class);
+    private static final Logger logger = LoggerFactory.getLogger(IcarusBackupOperationCoordinator.class);
 
-    private final SidecarSpec sidecarSpec;
+    private final SidecarSpec icarusSpec;
     private final ExecutorServiceSupplier executorServiceSupplier;
 
     @Inject
-    public SidecarBackupOperationCoordinator(final CassandraJMXService cassandraJMXService,
-                                             final Map<String, BackuperFactory> backuperFactoryMap,
-                                             final Map<String, BucketServiceFactory> bucketServiceFactoryMap,
-                                             final OperationsService operationsService,
-                                             final SidecarSpec sidecarSpec,
-                                             final ExecutorServiceSupplier executorServiceSupplier,
-                                             final ObjectMapper objectMapper,
-                                             final UploadTracker uploadTracker) {
+    public IcarusBackupOperationCoordinator(final CassandraJMXService cassandraJMXService,
+                                            final Map<String, BackuperFactory> backuperFactoryMap,
+                                            final Map<String, BucketServiceFactory> bucketServiceFactoryMap,
+                                            final SidecarSpec icarusSpec,
+                                            final ExecutorServiceSupplier executorServiceSupplier,
+                                            final ObjectMapper objectMapper,
+                                            final UploadTracker uploadTracker) {
         super(cassandraJMXService, backuperFactoryMap, bucketServiceFactoryMap, objectMapper, uploadTracker);
-        this.sidecarSpec = sidecarSpec;
+        this.icarusSpec = icarusSpec;
         this.executorServiceSupplier = executorServiceSupplier;
     }
 
@@ -78,13 +76,13 @@ public class SidecarBackupOperationCoordinator extends BaseBackupOperationCoordi
 
         logger.info("Resolved datacenter: {}", operation.request.dc == null ? "all of them" : operation.request.dc);
 
-        final Map<InetAddress, IcarusClient> sidecarClientMap = constructSidecars(topology.clusterName,
-                                                                                  topology.endpoints,
-                                                                                  topology.endpointDcs,
-                                                                                  sidecarSpec,
-                                                                                  objectMapper);
+        final Map<InetAddress, IcarusClient> icarusClientMap = constructSidecars(topology.clusterName,
+                                                                                 topology.endpoints,
+                                                                                 topology.endpointDcs,
+                                                                                 icarusSpec,
+                                                                                 objectMapper);
 
-        logger.info("Executing backup requests against {}", sidecarClientMap.toString());
+        logger.info("Executing backup requests against {}", icarusClientMap.toString());
 
         operation.request.schemaVersion = topology.schemaVersion;
         operation.request.snapshotTag = resolveSnapshotTag(operation.request, topology.timestamp);
@@ -120,7 +118,7 @@ public class SidecarBackupOperationCoordinator extends BaseBackupOperationCoordi
 
 
         final BackupPhaseResultGatherer backupPhaseResultGatherer = executeDistributedBackup(operation,
-                                                                                             sidecarClientMap,
+                                                                                             icarusClientMap,
                                                                                              backupRequestPreparation,
                                                                                              topology);
 
@@ -146,7 +144,7 @@ public class SidecarBackupOperationCoordinator extends BaseBackupOperationCoordi
     }
 
     private BackupPhaseResultGatherer executeDistributedBackup(final Operation<BackupOperationRequest> globalOperation,
-                                                               final Map<InetAddress, IcarusClient> sidecarClientMap,
+                                                               final Map<InetAddress, IcarusClient> icarusClientMap,
                                                                final BackupRequestPreparation requestPreparation,
                                                                final ClusterTopology topology) {
         final ExecutorService executorService = executorServiceSupplier.get(MAX_NUMBER_OF_CONCURRENT_OPERATIONS);
@@ -155,11 +153,11 @@ public class SidecarBackupOperationCoordinator extends BaseBackupOperationCoordi
 
         try {
             final List<BackupOperationCallable> callables = new ArrayList<>();
-            final GlobalOperationProgressTracker progressTracker = new GlobalOperationProgressTracker(globalOperation, sidecarClientMap.entrySet().size());
+            final GlobalOperationProgressTracker progressTracker = new GlobalOperationProgressTracker(globalOperation, icarusClientMap.entrySet().size());
 
             // create
 
-            for (final Map.Entry<InetAddress, IcarusClient> entry : sidecarClientMap.entrySet()) {
+            for (final Map.Entry<InetAddress, IcarusClient> entry : icarusClientMap.entrySet()) {
                 try {
                     callables.add(new BackupOperationCallable(requestPreparation.prepare(entry.getValue(), globalOperation.request, topology),
                                                               entry.getValue(),

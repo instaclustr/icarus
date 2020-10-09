@@ -1,18 +1,18 @@
-package com.instaclustr.icarus.operations.sidecar;
+package com.instaclustr.icarus.operations.icarus;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.MoreObjects;
 import com.instaclustr.operations.OperationRequest;
 
-public class StopSidecarOperationRequest extends OperationRequest {
+public class StopIcarusOperationRequest extends OperationRequest {
 
-    public StopSidecarOperationRequest() {
+    public StopIcarusOperationRequest() {
         this("stop");
     }
 
     @JsonCreator
-    public StopSidecarOperationRequest(@JsonProperty("type") final String type) {
+    public StopIcarusOperationRequest(@JsonProperty("type") final String type) {
         this.type = "stop";
     }
 

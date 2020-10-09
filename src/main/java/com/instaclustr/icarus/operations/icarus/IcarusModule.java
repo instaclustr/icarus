@@ -1,15 +1,15 @@
-package com.instaclustr.icarus.operations.sidecar;
+package com.instaclustr.icarus.operations.icarus;
 
 import static com.instaclustr.operations.OperationBindings.installOperationBindings;
 
 import com.google.inject.AbstractModule;
 
-public class SidecarModule extends AbstractModule {
+public class IcarusModule extends AbstractModule {
     @Override
     protected void configure() {
         installOperationBindings(binder(),
                                  "stop",
-                                 StopSidecarOperationRequest.class,
-                                 StopSidecarOperation.class);
+                                 StopIcarusOperationRequest.class,
+                                 StopIcarusOperation.class);
     }
 }

@@ -18,7 +18,7 @@ public class CoordinationUtils {
     public static Map<InetAddress, IcarusClient> constructSidecars(final String clusterName,
                                                                    final Map<InetAddress, UUID> endpoints,
                                                                    final Map<InetAddress, String> endpointDcs,
-                                                                   final SidecarSpec sidecarSpec,
+                                                                   final SidecarSpec icarusSpec,
                                                                    final ObjectMapper objectMapper) {
 
         final Set<InetAddress> difference = Sets.difference(endpointDcs.keySet(), endpointDcs.keySet());
@@ -32,17 +32,17 @@ public class CoordinationUtils {
         final Map<InetAddress, IcarusClient> inetAddressSidecarMap = new HashMap<>();
 
         for (final Map.Entry<InetAddress, UUID> entry : endpoints.entrySet()) {
-            final IcarusClient sidecar = new IcarusClient.Builder()
+            final IcarusClient icarusClient = new IcarusClient.Builder()
                     .withInetAddress(entry.getKey())
                     // here we assume that all sidecars would be on same port as this one
-                    .withPort(sidecarSpec.httpServerAddress.getPort())
+                    .withPort(icarusSpec.httpServerAddress.getPort())
                     .withClusterName(clusterName)
                     .withDc(endpointDcs.get(entry.getKey()))
                     .withHostId(entry.getValue())
                     .withObjectMapper(objectMapper)
                     .build();
 
-            inetAddressSidecarMap.put(entry.getKey(), sidecar);
+            inetAddressSidecarMap.put(entry.getKey(), icarusClient);
         }
 
         return inetAddressSidecarMap;

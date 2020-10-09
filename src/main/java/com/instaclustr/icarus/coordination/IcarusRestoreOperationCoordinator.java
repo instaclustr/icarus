@@ -49,12 +49,12 @@ import jmx.org.apache.cassandra.service.CassandraJMXService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SidecarRestoreOperationCoordinator extends BaseRestoreOperationCoordinator {
+public class IcarusRestoreOperationCoordinator extends BaseRestoreOperationCoordinator {
 
-    private static final Logger logger = LoggerFactory.getLogger(SidecarBackupOperationCoordinator.class);
+    private static final Logger logger = LoggerFactory.getLogger(IcarusBackupOperationCoordinator.class);
 
     private final CassandraJMXService cassandraJMXService;
-    private final SidecarSpec sidecarSpec;
+    private final SidecarSpec icarusSpec;
 
     private final ExecutorServiceSupplier executorServiceSupplier;
     private final OperationsService operationsService;
@@ -62,17 +62,17 @@ public class SidecarRestoreOperationCoordinator extends BaseRestoreOperationCoor
     private final Map<String, BucketServiceFactory> bucketServiceFactoryMap;
 
     @Inject
-    public SidecarRestoreOperationCoordinator(final Map<String, RestorerFactory> restorerFactoryMap,
-                                              final RestorationStrategyResolver restorationStrategyResolver,
-                                              final CassandraJMXService cassandraJMXService,
-                                              final SidecarSpec sidecarSpec,
-                                              final ExecutorServiceSupplier executorServiceSupplier,
-                                              final OperationsService operationsService,
-                                              final ObjectMapper objectMapper,
-                                              final Map<String, BucketServiceFactory> bucketServiceFactoryMap) {
+    public IcarusRestoreOperationCoordinator(final Map<String, RestorerFactory> restorerFactoryMap,
+                                             final RestorationStrategyResolver restorationStrategyResolver,
+                                             final CassandraJMXService cassandraJMXService,
+                                             final SidecarSpec icarusSpec,
+                                             final ExecutorServiceSupplier executorServiceSupplier,
+                                             final OperationsService operationsService,
+                                             final ObjectMapper objectMapper,
+                                             final Map<String, BucketServiceFactory> bucketServiceFactoryMap) {
         super(restorerFactoryMap, restorationStrategyResolver);
         this.cassandraJMXService = cassandraJMXService;
-        this.sidecarSpec = sidecarSpec;
+        this.icarusSpec = icarusSpec;
         this.executorServiceSupplier = executorServiceSupplier;
         this.operationsService = operationsService;
         this.objectMapper = objectMapper;
@@ -162,15 +162,15 @@ public class SidecarRestoreOperationCoordinator extends BaseRestoreOperationCoor
 
         final RestorationPhaseResultGatherer gatherer = new RestorationPhaseResultGatherer();
 
-        try (final ClientsWrapper clientsWrapper = new ClientsWrapper(getSidecarClients())) {
-            final ClientsWrapper oneClient = getOneClient(clientsWrapper);
+        try (final IcarusWrapper icarusWrapper = new IcarusWrapper(getSidecarClients())) {
+            final IcarusWrapper oneClient = getOneClient(icarusWrapper);
 
             final ResultSupplier[] resultSuppliers = new ResultSupplier[]{
                     () -> gatherer.combine(executePhase(new InitPhasePreparation(), operation, oneClient)),
-                    () -> gatherer.combine(executePhase(new DownloadPhasePreparation(), operation, clientsWrapper)),
+                    () -> gatherer.combine(executePhase(new DownloadPhasePreparation(), operation, icarusWrapper)),
                     () -> gatherer.combine(executePhase(new TruncatePhasePreparation(), operation, oneClient)),
-                    () -> gatherer.combine(executePhase(new ImportingPhasePreparation(), operation, clientsWrapper)),
-                    () -> gatherer.combine(executePhase(new CleaningPhasePreparation(), operation, clientsWrapper)),
+                    () -> gatherer.combine(executePhase(new ImportingPhasePreparation(), operation, icarusWrapper)),
+                    () -> gatherer.combine(executePhase(new CleaningPhasePreparation(), operation, icarusWrapper)),
             };
 
             for (final ResultSupplier supplier : resultSuppliers) {
@@ -184,17 +184,17 @@ public class SidecarRestoreOperationCoordinator extends BaseRestoreOperationCoor
         return gatherer;
     }
 
-    public static class ClientsWrapper implements Closeable {
-        public Map<InetAddress, IcarusClient> sidecarClients;
+    public static class IcarusWrapper implements Closeable {
+        public Map<InetAddress, IcarusClient> icarusClients;
 
-        public ClientsWrapper(final Map<InetAddress, IcarusClient> sidecarClients) {
-            this.sidecarClients = sidecarClients;
+        public IcarusWrapper(final Map<InetAddress, IcarusClient> icarusClients) {
+            this.icarusClients = icarusClients;
         }
 
         @Override
         public void close() {
-            if (sidecarClients != null) {
-                for (final IcarusClient icarusClient : sidecarClients.values()) {
+            if (icarusClients != null) {
+                for (final IcarusClient icarusClient : icarusClients.values()) {
                     if (icarusClient != null) {
                         try {
                             icarusClient.close();
@@ -213,13 +213,13 @@ public class SidecarRestoreOperationCoordinator extends BaseRestoreOperationCoor
         ResultGatherer<RestoreOperationRequest> getWithEx() throws Exception;
     }
 
-    private ClientsWrapper getOneClient(final ClientsWrapper sidecarWrapper) {
-        if (sidecarWrapper.sidecarClients != null) {
-            final Iterator<Entry<InetAddress, IcarusClient>> it = sidecarWrapper.sidecarClients.entrySet().iterator();
+    private IcarusWrapper getOneClient(final IcarusWrapper icarusWrapper) {
+        if (icarusWrapper.icarusClients != null) {
+            final Iterator<Entry<InetAddress, IcarusClient>> it = icarusWrapper.icarusClients.entrySet().iterator();
 
             if (it.hasNext()) {
                 final Entry<InetAddress, IcarusClient> next = it.next();
-                return new ClientsWrapper(new HashMap<InetAddress, IcarusClient>() {{
+                return new IcarusWrapper(new HashMap<InetAddress, IcarusClient>() {{
                     put(next.getKey(), next.getValue());
                 }});
             }
@@ -298,23 +298,23 @@ public class SidecarRestoreOperationCoordinator extends BaseRestoreOperationCoor
 
     private Map<InetAddress, IcarusClient> getSidecarClients() throws Exception {
         final ClusterTopology clusterTopology = new CassandraClusterTopology(cassandraJMXService, null).act();
-        return constructSidecars(clusterTopology.clusterName, clusterTopology.endpoints, clusterTopology.endpointDcs, sidecarSpec, objectMapper);
+        return constructSidecars(clusterTopology.clusterName, clusterTopology.endpoints, clusterTopology.endpointDcs, icarusSpec, objectMapper);
     }
 
     private RestorationPhaseResultGatherer executePhase(final PhasePreparation phasePreparation,
                                                         final Operation<RestoreOperationRequest> globalOperation,
-                                                        final ClientsWrapper clientsWrapper) throws OperationCoordinatorException {
+                                                        final IcarusWrapper icarusWrapper) throws OperationCoordinatorException {
         final ExecutorService executorService = executorServiceSupplier.get(MAX_NUMBER_OF_CONCURRENT_OPERATIONS);
 
         final RestorationPhaseResultGatherer resultGatherer = new RestorationPhaseResultGatherer();
 
         try {
             final List<RestoreOperationCallable> callables = new ArrayList<>();
-            final GlobalOperationProgressTracker progressTracker = new GlobalOperationProgressTracker(globalOperation, clientsWrapper.sidecarClients.entrySet().size());
+            final GlobalOperationProgressTracker progressTracker = new GlobalOperationProgressTracker(globalOperation, icarusWrapper.icarusClients.entrySet().size());
 
             // create
 
-            for (final Entry<InetAddress, IcarusClient> entry : clientsWrapper.sidecarClients.entrySet()) {
+            for (final Entry<InetAddress, IcarusClient> entry : icarusWrapper.icarusClients.entrySet()) {
                 callables.add(new RestoreOperationCallable(phasePreparation.prepare(entry.getValue(), globalOperation.request),
                                                            entry.getValue(),
                                                            progressTracker));

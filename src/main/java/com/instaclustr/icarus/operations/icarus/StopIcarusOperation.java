@@ -1,4 +1,4 @@
-package com.instaclustr.icarus.operations.sidecar;
+package com.instaclustr.icarus.operations.icarus;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -17,15 +17,15 @@ import org.slf4j.LoggerFactory;
 /**
  * In context of Kubernetes, exiting a process will kill a container and it will be restarted.
  */
-public class StopSidecarOperation extends Operation<StopSidecarOperationRequest> {
+public class StopIcarusOperation extends Operation<StopIcarusOperationRequest> {
 
-    private static final Logger logger = LoggerFactory.getLogger(StopSidecarOperation.class);
+    private static final Logger logger = LoggerFactory.getLogger(StopIcarusOperation.class);
 
     private final OperationsService operationsService;
 
     @Inject
-    public StopSidecarOperation(OperationsService operationsService,
-                                @Assisted final StopSidecarOperationRequest request) {
+    public StopIcarusOperation(OperationsService operationsService,
+                               @Assisted final StopIcarusOperationRequest request) {
         super(request);
         this.operationsService = operationsService;
     }
@@ -33,7 +33,7 @@ public class StopSidecarOperation extends Operation<StopSidecarOperationRequest>
     @Override
     protected void run0() throws Exception {
         Awaitility.await().pollInterval(10, SECONDS).atMost(5, MINUTES).until(() -> {
-            final List<Operation> otherOperations = operationsService.getOperations(op -> op.request.getClass() != StopSidecarOperationRequest.class);
+            final List<Operation> otherOperations = operationsService.getOperations(op -> op.request.getClass() != StopIcarusOperationRequest.class);
 
             if (otherOperations.size() != 0) {
                 logger.info("Waiting for operations to stop:  " + otherOperations.stream().map(op -> op.id).collect(toList()));
@@ -51,7 +51,7 @@ public class StopSidecarOperation extends Operation<StopSidecarOperationRequest>
 
         operationsService.awaitTerminated();
 
-        logger.info("Killing sidecar container.");
+        logger.info("Killing Icarus container.");
         System.exit(0);
     }
 }

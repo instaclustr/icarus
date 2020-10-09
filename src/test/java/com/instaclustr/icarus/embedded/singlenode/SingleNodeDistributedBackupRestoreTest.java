@@ -86,23 +86,23 @@ public class SingleNodeDistributedBackupRestoreTest extends AbstractCassandraIca
     @Test
     public void backupTest() {
 
-        final SidecarHolder sidecarHolder = sidecars.get("datacenter1");
+        final IcarusHolder icarusHolder = icaruses.get("datacenter1");
 
         BackupOperationRequest backupOperationRequest1 = createBackupRequest("stefansnapshot");
         BackupOperationRequest backupOperationRequest2 = createBackupRequest("stefansnapshot2");
 
         // two concurrent backups
-        IcarusClient.OperationResult<BackupOperation> backup1 = sidecarHolder.icarusClient.backup(backupOperationRequest1);
-        IcarusClient.OperationResult<BackupOperation> backup2 = sidecarHolder.icarusClient.backup(backupOperationRequest2);
+        IcarusClient.OperationResult<BackupOperation> backup1 = icarusHolder.icarusClient.backup(backupOperationRequest1);
+        IcarusClient.OperationResult<BackupOperation> backup2 = icarusHolder.icarusClient.backup(backupOperationRequest2);
 
-        sidecarHolder.icarusClient.waitForCompleted(backup1);
-        sidecarHolder.icarusClient.waitForCompleted(backup2);
+        icarusHolder.icarusClient.waitForCompleted(backup1);
+        icarusHolder.icarusClient.waitForCompleted(backup2);
 
-        sidecarHolder.icarusClient.waitForCompleted(sidecarHolder.icarusClient.truncate(new TruncateOperationRequest(keyspaceName, tableName)));
+        icarusHolder.icarusClient.waitForCompleted(icarusHolder.icarusClient.truncate(new TruncateOperationRequest(keyspaceName, tableName)));
 
-        RestoreOperationRequest restoreRequest = createRestoreOperationRequest(sidecarHolder.icarusClient.getCassandraSchemaVersion().getSchemaVersion());
+        RestoreOperationRequest restoreRequest = createRestoreOperationRequest(icarusHolder.icarusClient.getCassandraSchemaVersion().getSchemaVersion());
 
-        sidecarHolder.icarusClient.waitForCompleted(sidecarHolder.icarusClient.restore(restoreRequest));
+        icarusHolder.icarusClient.waitForCompleted(icarusHolder.icarusClient.restore(restoreRequest));
 
         dbHelper.dump(keyspaceName, tableName);
     }

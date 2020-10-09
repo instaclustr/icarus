@@ -19,7 +19,7 @@ import com.github.nosan.embedded.cassandra.api.Cassandra;
 import com.github.nosan.embedded.cassandra.api.connection.CqlSessionCassandraConnectionFactory;
 import com.instaclustr.icarus.operations.flush.FlushOperationRequest;
 import com.instaclustr.icarus.rest.IcarusClient;
-import com.instaclustr.icarus.embedded.AbstractCassandraIcarusTest.SidecarHolder;
+import com.instaclustr.icarus.embedded.AbstractCassandraIcarusTest.IcarusHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
@@ -31,20 +31,20 @@ public class DatabaseHelper {
     private static final String defaultDC = "datacenter1";
 
     private final Map<String, Cassandra> nodes;
-    private final Map<String, SidecarHolder> sidecarClients;
+    private final Map<String, IcarusHolder> icarusClients;
 
     private Cassandra currentNode;
     private IcarusClient currentClient;
 
-    public DatabaseHelper(Map<String, Cassandra> nodes, Map<String, SidecarHolder> sidecarClients) {
+    public DatabaseHelper(Map<String, Cassandra> nodes, Map<String, IcarusHolder> icarusClients) {
         this.nodes = nodes;
-        this.sidecarClients = sidecarClients;
+        this.icarusClients = icarusClients;
         switchHelper(defaultDC);
     }
 
     public void switchHelper(String datacenter) {
         currentNode = nodes.getOrDefault(datacenter, nodes.get(defaultDC));
-        currentClient = sidecarClients.getOrDefault(datacenter, sidecarClients.get(defaultDC)).icarusClient;
+        currentClient = icarusClients.getOrDefault(datacenter, icarusClients.get(defaultDC)).icarusClient;
     }
 
     public void createKeyspace(String keyspace, Map<String, Integer> networkTopologyMap) {

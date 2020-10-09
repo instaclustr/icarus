@@ -55,7 +55,7 @@ public abstract class AbstractCassandraIcarusTest {
     protected static final int numberOfSSTables = 3;
 
     protected Map<String, Cassandra> cassandraInstances = new TreeMap<>();
-    protected Map<String, SidecarHolder> sidecars = new TreeMap<>();
+    protected Map<String, IcarusHolder> icaruses = new TreeMap<>();
 
     protected IcarusClient icarusClient;
     protected DatabaseHelper dbHelper;
@@ -65,8 +65,8 @@ public abstract class AbstractCassandraIcarusTest {
         startNodes();
         startSidecars();
 
-        dbHelper = new DatabaseHelper(cassandraInstances, sidecars);
-        icarusClient = sidecars.get("datacenter1").icarusClient;
+        dbHelper = new DatabaseHelper(cassandraInstances, icaruses);
+        icarusClient = icaruses.get("datacenter1").icarusClient;
     }
 
     @AfterClass
@@ -145,19 +145,19 @@ public abstract class AbstractCassandraIcarusTest {
 
     protected void startSidecars() throws Exception {
 
-        Map<String, SidecarHolder> customSidecars = customSidecars();
+        Map<String, IcarusHolder> customSidecars = customSidecars();
 
-        sidecars.clear();
+        icaruses.clear();
 
         if (customSidecars.isEmpty()) {
-            sidecars.put("datacenter1", defaultSidecar());
+            icaruses.put("datacenter1", defaultIcarus());
         } else {
-            sidecars.putAll(customSidecars);
+            icaruses.putAll(customSidecars);
         }
     }
 
     protected void stopSidecars() {
-        List<SidecarHolder> serverServices = new ArrayList<>(sidecars.values());
+        List<IcarusHolder> serverServices = new ArrayList<>(icaruses.values());
 
         Collections.reverse(serverServices);
         serverServices.forEach(pair -> {
@@ -171,19 +171,19 @@ public abstract class AbstractCassandraIcarusTest {
         });
     }
 
-    protected Map<String, SidecarHolder> customSidecars() throws Exception {
+    protected Map<String, IcarusHolder> customSidecars() throws Exception {
         return Collections.emptyMap();
     }
 
-    protected SidecarHolder sidecar(String jmxAddress, Integer jmxPort, String httpAdddress, Integer httpPort) throws Exception {
+    protected IcarusHolder sidecar(String jmxAddress, Integer jmxPort, String httpAdddress, Integer httpPort) throws Exception {
         CassandraJMXSpec cassandraJMXSpec = new CassandraJMXSpec();
         cassandraJMXSpec.jmxServiceURL = new CassandraJMXServiceURLTypeConverter().convert("service:jmx:rmi:///jndi/rmi://" + jmxAddress + ":" + jmxPort.toString() + "/jmxrmi");
 
-        SidecarSpec sidecarSpec = new SidecarSpec();
-        sidecarSpec.httpServerAddress = new HttpServerInetSocketAddressTypeConverter().convert(httpAdddress + ":" + httpPort.toString());
-        sidecarSpec.operationsExpirationPeriod = new Time(1L, HOURS);
+        SidecarSpec icarusSpec = new SidecarSpec();
+        icarusSpec.httpServerAddress = new HttpServerInetSocketAddressTypeConverter().convert(httpAdddress + ":" + httpPort.toString());
+        icarusSpec.operationsExpirationPeriod = new Time(1L, HOURS);
 
-        List<AbstractModule> modules = new Icarus().getModules(sidecarSpec, cassandraJMXSpec, true);
+        List<AbstractModule> modules = new Icarus().getModules(icarusSpec, cassandraJMXSpec, true);
 
         Injector injector = Guice.createInjector(modules);
 
@@ -199,10 +199,10 @@ public abstract class AbstractCassandraIcarusTest {
                 .withObjectMapper(injector.getInstance(ObjectMapper.class))
                 .build(injector.getInstance(ResourceConfig.class));
 
-        return new SidecarHolder(serviceManager, icarusClient, injector);
+        return new IcarusHolder(serviceManager, icarusClient, injector);
     }
 
-    protected SidecarHolder defaultSidecar() throws Exception {
+    protected IcarusHolder defaultIcarus() throws Exception {
         return sidecar("127.0.0.1", 7199, "127.0.0.1", 4567);
     }
 
@@ -236,23 +236,23 @@ public abstract class AbstractCassandraIcarusTest {
         waitForOpenPort("127.0.0.1", port);
     }
 
-    public static class SidecarHolder {
+    public static class IcarusHolder {
 
         public final ServiceManager serviceManager;
         public final IcarusClient icarusClient;
         public final Injector injector;
 
-        public SidecarHolder(final ServiceManager serviceManager,
-                             final IcarusClient icarusClient,
-                             final Injector injector) {
+        public IcarusHolder(final ServiceManager serviceManager,
+                            final IcarusClient icarusClient,
+                            final Injector injector) {
             this.serviceManager = serviceManager;
             this.icarusClient = icarusClient;
             this.injector = injector;
         }
     }
 
-    public Map<String, SidecarHolder> twoSidecars() throws Exception {
-        return new TreeMap<String, SidecarHolder>() {{
+    public Map<String, IcarusHolder> twoSidecars() throws Exception {
+        return new TreeMap<String, IcarusHolder>() {{
             put("datacenter1", sidecar("127.0.0.1", 7199, "127.0.0.1", 4567));
             put("datacenter2", sidecar("127.0.0.1", 7200, "127.0.0.2", 4567));
         }};

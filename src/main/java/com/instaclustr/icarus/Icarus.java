@@ -32,7 +32,7 @@ import com.instaclustr.icarus.operations.rebuild.RebuildModule;
 import com.instaclustr.icarus.operations.refresh.RefreshModule;
 import com.instaclustr.icarus.operations.restart.RestartModule;
 import com.instaclustr.icarus.operations.scrub.ScrubModule;
-import com.instaclustr.icarus.operations.sidecar.SidecarModule;
+import com.instaclustr.icarus.operations.icarus.IcarusModule;
 import com.instaclustr.icarus.operations.upgradesstables.UpgradeSSTablesModule;
 import com.instaclustr.icarus.service.ServicesModule;
 import com.instaclustr.jackson.JacksonModule;
@@ -60,7 +60,7 @@ import picocli.CommandLine.Spec;
 public final class Icarus extends CLIApplication implements Callable<Void> {
 
     @Mixin
-    public SidecarSpec sidecarSpec;
+    public SidecarSpec icarusSpec;
 
     @Mixin
     public CassandraJMXSpec jmxSpec;
@@ -69,7 +69,7 @@ public final class Icarus extends CLIApplication implements Callable<Void> {
     private CommandSpec commandSpec;
 
     @Option(names = {"--enable-truncate"},
-            description = "If enabled, sidecar will expose truncate operation on REST, defaults to false.")
+            description = "If enabled, Icarus will expose truncate operation on REST, defaults to false.")
     private boolean enableTruncateOperation;
 
     public static void main(String[] args) {
@@ -94,24 +94,24 @@ public final class Icarus extends CLIApplication implements Callable<Void> {
         logCommandVersionInformation(commandSpec);
 
         // production binds singletons as eager by default
-        final Injector injector = createInjector(PRODUCTION, getModules(sidecarSpec, jmxSpec, enableTruncateOperation));
+        final Injector injector = createInjector(PRODUCTION, getModules(icarusSpec, jmxSpec, enableTruncateOperation));
 
         return injector.getInstance(Application.class).call();
     }
 
     @Override
     public String getImplementationTitle() {
-        return "cassandra-sidecar";
+        return "instaclustr-icarus";
     }
 
-    public List<AbstractModule> getModules(SidecarSpec sidecarSpec,
+    public List<AbstractModule> getModules(SidecarSpec icarusSpec,
                                            CassandraJMXSpec jmxSpec,
                                            final boolean enableTruncateOperation) throws Exception {
         List<AbstractModule> modules = new ArrayList<>();
 
         modules.addAll(backupRestoreModules());
         modules.addAll(operationModules());
-        modules.addAll(sidecarModules(sidecarSpec, jmxSpec));
+        modules.addAll(icarusModules(icarusSpec, jmxSpec));
 
         if (enableTruncateOperation) {
             modules.add(new AbstractModule() {
@@ -128,7 +128,7 @@ public final class Icarus extends CLIApplication implements Callable<Void> {
         return modules;
     }
 
-    public List<AbstractModule> sidecarModules(SidecarSpec sidecarSpec, CassandraJMXSpec jmxSpec) throws Exception {
+    public List<AbstractModule> icarusModules(SidecarSpec icarusSpec, CassandraJMXSpec jmxSpec) throws Exception {
         return new ArrayList<AbstractModule>() {{
             add(new VersionModule(getVersion()));
             add(new ServiceManagerModule());
@@ -140,15 +140,15 @@ public final class Icarus extends CLIApplication implements Callable<Void> {
                                                                    jmxSpec.keyStore,
                                                                    jmxSpec.keyStorePassword,
                                                                    jmxSpec.jmxClientAuth)));
-            add(new JerseyHttpServerModule(sidecarSpec.httpServerAddress));
-            add(new OperationsModule(sidecarSpec.operationsExpirationPeriod));
+            add(new JerseyHttpServerModule(icarusSpec.httpServerAddress));
+            add(new OperationsModule(icarusSpec.operationsExpirationPeriod));
             add(new ExecutorsModule());
             add(new JacksonModule());
             add(new ServicesModule());
             add(new AbstractModule() {
                 @Override
                 protected void configure() {
-                    bind(SidecarSpec.class).toInstance(sidecarSpec);
+                    bind(SidecarSpec.class).toInstance(icarusSpec);
                 }
             });
         }};
@@ -176,7 +176,7 @@ public final class Icarus extends CLIApplication implements Callable<Void> {
             add(new ScrubModule());
             add(new DrainModule());
             add(new RestartModule());
-            add(new SidecarModule());
+            add(new IcarusModule());
             add(new RefreshModule());
             add(new FlushModule());
             add(new ImportModule());

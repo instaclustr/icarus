@@ -57,7 +57,7 @@ public class EmbeddedCassandraOperationsTest extends AbstractCassandraIcarusTest
 
     @Test
     public void sidecarVersion() {
-        final String sidecarVersion = icarusClient.getSidecarVersion();
+        final String sidecarVersion = icarusClient.getIcarusVersion();
         assertNotNull(sidecarVersion);
     }
 

@@ -57,8 +57,8 @@ import com.instaclustr.icarus.operations.refresh.RefreshOperation;
 import com.instaclustr.icarus.operations.refresh.RefreshOperationRequest;
 import com.instaclustr.icarus.operations.restart.RestartOperation;
 import com.instaclustr.icarus.operations.restart.RestartOperationRequest;
-import com.instaclustr.icarus.operations.sidecar.StopSidecarOperation;
-import com.instaclustr.icarus.operations.sidecar.StopSidecarOperationRequest;
+import com.instaclustr.icarus.operations.icarus.StopIcarusOperation;
+import com.instaclustr.icarus.operations.icarus.StopIcarusOperationRequest;
 import com.instaclustr.icarus.operations.scrub.ScrubOperation;
 import com.instaclustr.icarus.operations.scrub.ScrubOperationRequest;
 import com.instaclustr.icarus.operations.upgradesstables.UpgradeSSTablesOperation;
@@ -86,7 +86,7 @@ public class IcarusClient implements Closeable {
     private final WebTarget operationsWebTarget;
     private final WebTarget cassandraSchemaWebTarget;
     private final WebTarget cassandraVersionWebTarget;
-    private final WebTarget sidecarVersionWebTarget;
+    private final WebTarget icarusVersionWebTarget;
     private final WebTarget cassandraTopologyWebTarget;
 
     private final int port;
@@ -113,7 +113,7 @@ public class IcarusClient implements Closeable {
 
         cassandraSchemaWebTarget = this.client.target(format("%s/version/schema", rootUrl));
         cassandraVersionWebTarget = this.client.target(format("%s/version/cassandra", rootUrl));
-        sidecarVersionWebTarget = this.client.target(format("%s/version/sidecar", rootUrl));
+        icarusVersionWebTarget = this.client.target(format("%s/version/sidecar", rootUrl));
         cassandraTopologyWebTarget = this.client.target(format("%s/topology", rootUrl));
 
         this.clusterName = builder.clusterName;
@@ -166,9 +166,9 @@ public class IcarusClient implements Closeable {
         }
     }
 
-    public String getSidecarVersion() {
+    public String getIcarusVersion() {
         try {
-            return sidecarVersionWebTarget.request(APPLICATION_JSON).get().readEntity(String.class);
+            return icarusVersionWebTarget.request(APPLICATION_JSON).get().readEntity(String.class);
         } catch (final Exception ex) {
             throw new RuntimeException(ex);
         }
@@ -250,7 +250,7 @@ public class IcarusClient implements Closeable {
         return performOperationSubmission(operationRequest);
     }
 
-    public OperationResult<StopSidecarOperation> stopSidecarOperation(final StopSidecarOperationRequest operationRequest) {
+    public OperationResult<StopIcarusOperation> stopSidecarOperation(final StopIcarusOperationRequest operationRequest) {
         return performOperationSubmission(operationRequest);
     }
 

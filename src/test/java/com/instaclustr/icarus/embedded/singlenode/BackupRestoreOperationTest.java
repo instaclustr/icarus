@@ -27,7 +27,7 @@ public class BackupRestoreOperationTest extends AbstractCassandraIcarusTest {
     public void backupTest() throws Exception {
 
         try {
-            final SidecarHolder sidecarHolder = sidecars.get("datacenter1");
+            final IcarusHolder icarusHolder = icaruses.get("datacenter1");
 
             final BackupOperationRequest backupOperationRequest = new BackupOperationRequest(
                     "backup",
@@ -52,11 +52,11 @@ public class BackupRestoreOperationTest extends AbstractCassandraIcarusTest {
                     null // proxy
             );
 
-            final OperationResult<BackupOperation> result = sidecarHolder.icarusClient.backup(backupOperationRequest);
+            final OperationResult<BackupOperation> result = icarusHolder.icarusClient.backup(backupOperationRequest);
 
-            sidecarHolder.icarusClient.waitForCompleted(result);
+            icarusHolder.icarusClient.waitForCompleted(result);
 
-            sidecarHolder.icarusClient.waitForCompleted(sidecarHolder.icarusClient.truncate(new TruncateOperationRequest(keyspaceName, tableName)));
+            icarusHolder.icarusClient.waitForCompleted(icarusHolder.icarusClient.truncate(new TruncateOperationRequest(keyspaceName, tableName)));
 
             final RestoreOperationRequest restoreOperationRequest = new RestoreOperationRequest(
                     "restore", // type
@@ -88,16 +88,16 @@ public class BackupRestoreOperationTest extends AbstractCassandraIcarusTest {
                     null // proxy
             );
 
-            sidecarHolder.icarusClient.waitForCompleted(sidecarHolder.icarusClient.restore(restoreOperationRequest));
+            icarusHolder.icarusClient.waitForCompleted(icarusHolder.icarusClient.restore(restoreOperationRequest));
 
             restoreOperationRequest.restorationPhase = TRUNCATE;
-            sidecarHolder.icarusClient.waitForCompleted(sidecarHolder.icarusClient.restore(restoreOperationRequest));
+            icarusHolder.icarusClient.waitForCompleted(icarusHolder.icarusClient.restore(restoreOperationRequest));
 
             restoreOperationRequest.restorationPhase = IMPORT;
-            sidecarHolder.icarusClient.waitForCompleted(sidecarHolder.icarusClient.restore(restoreOperationRequest));
+            icarusHolder.icarusClient.waitForCompleted(icarusHolder.icarusClient.restore(restoreOperationRequest));
             restoreOperationRequest.restorationPhase = CLEANUP;
 
-            sidecarHolder.icarusClient.waitForCompleted(sidecarHolder.icarusClient.restore(restoreOperationRequest));
+            icarusHolder.icarusClient.waitForCompleted(icarusHolder.icarusClient.restore(restoreOperationRequest));
 
             dbHelper.dump(keyspaceName, tableName);
         } catch (final Exception ex) {
