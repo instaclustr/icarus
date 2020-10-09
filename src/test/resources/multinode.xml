@@ -4,7 +4,7 @@
   
   <test name="multinode_tests">
     <packages>
-      <package name="com.instaclustr.sidecar.embedded.multinode"/>
+      <package name="com.instaclustr.icarus.embedded.multinode"/>
     </packages>
   </test>
 

@@ -1,13 +1,13 @@
-= Cassandra Sidecar
+= Instaclustr Icarus
 
-image:https://img.shields.io/maven-central/v/com.instaclustr/cassandra-sidecar.svg?label=Maven%20Central[link=https://search.maven.org/search?q=g:%22com.instaclustr%22%20AND%20a:%22cassandra-sidecar%22]
+image:https://img.shields.io/maven-central/v/com.instaclustr/icarus.svg?label=Maven%20Central[link=https://search.maven.org/search?q=g:%22com.instaclustr%22%20AND%20a:%22icarus%22]
 
-image:https://circleci.com/gh/instaclustr/cassandra-sidecar.svg?style=svg["Instaclustr",link="https://circleci.com/gh/instaclustr/cassandra-sidecar"]
+image:https://circleci.com/gh/instaclustr/instaclustr-icarus.svg?style=svg["Instaclustr",link="https://circleci.com/gh/instaclustr/instaclustr-icarus"]
 
 This repository is home of a sidecar for Apache Cassandra database. Sidecar is meant to be run alongside of Cassandra instance
 and sidecar talks to Cassandra via JMX.
 
-Sidecar JAR is also integrating https://github.com/instaclustr/cassandra-backup[backup-restore] solution of Instaclustr seamlessly so it might be used in two modes -
+Sidecar JAR is also integrating https://github.com/instaclustr/instaclustr-esop[Esop] for backup and restore seamlessly so it might be used in two modes -
 either as a long-running server application which responds to clients requests or as a CLI application via which one
 can backup / restore a Cassandra node.
 
@@ -15,7 +15,7 @@ can backup / restore a Cassandra node.
 
 [source,bash]
 ----
-$ java -jar cassandra-sidecar-1.0.0.jar
+$ java -jar instaclustr-icarus.jar
 Missing required sub-command.
 Usage: <main class> [-hV] [COMMAND]
   -h, --help      Show this help message and exit.
@@ -29,7 +29,7 @@ If you use `backup-restore`, you will have the same functionality as if you were
 
 [source,bash]
 ----
-$ java -jar cassandra-sidecar-1.0.0.jar backup-restore help
+$ java -jar instaclustr-icarus.jar backup-restore help
 Usage: <main class> backup-restore [-hV] [COMMAND]
 Application for backup and restore of a Cassandra node.
   -h, --help      Show this help message and exit.
@@ -47,7 +47,7 @@ On the other hand, if you use server mode, there will be HTTP REST server starte
 
 [source,bash]
 ----
-$ java -jar cassandra-sidecar-1.0.0.jar cassandra-sidecar
+$ java -jar instaclustr-icarus.jar cassandra-sidecar
 ----
 
 == REST interface

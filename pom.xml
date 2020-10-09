@@ -4,16 +4,16 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.instaclustr</groupId>
-    <artifactId>cassandra-sidecar</artifactId>
-    <version>2.0.0-alpha8</version>
+    <artifactId>icarus</artifactId>
+    <version>1.0.0</version>
 
-    <name>cassandra-sidecar</name>
+    <name>instaclustr-icarus</name>
     <description>Sidecar for Apache Cassandra</description>
-    <url>https://github.com/instaclustr/cassandra-sidecar</url>
+    <url>https://github.com/instaclustr/instaclustr-icarus</url>
 
     <properties>
         <instaclustr.sidecar.common.version>1.3.7</instaclustr.sidecar.common.version>
-        <instaclustr.backup.restore.version>2.0.0-alpha8</instaclustr.backup.restore.version>
+        <instaclustr.esop.version>1.0.0</instaclustr.esop.version>
 
         <testng.version>6.14.3</testng.version>
         <mockito.version>2.23.4</mockito.version>
@@ -61,11 +61,11 @@
     </organization>
 
     <scm>
-        <connection>scm:git:git://git@github.com:instaclustr/cassandra-sidecar.git
+        <connection>scm:git:git://git@github.com:instaclustr/instaclustr-icarus.git
         </connection>
-        <developerConnection>scm:git:ssh://github.com/instaclustr/cassandra-sidecar.git
+        <developerConnection>scm:git:ssh://github.com/instaclustr/instaclustr-icarus.git
         </developerConnection>
-        <url>git://github.com/instaclustr/cassandra-sidecar.git</url>
+        <url>git://github.com/instaclustr/instaclustr-icarus.git</url>
     </scm>
 
     <distributionManagement>
@@ -84,8 +84,8 @@
 
         <dependency>
             <groupId>com.instaclustr</groupId>
-            <artifactId>instaclustr-backup-restore</artifactId>
-            <version>${instaclustr.backup.restore.version}</version>
+            <artifactId>esop</artifactId>
+            <version>${instaclustr.esop.version}</version>
         </dependency>
 
         <!-- test dependencies -->
@@ -285,7 +285,7 @@
     </profiles>
 
     <build>
-        <finalName>cassandra-sidecar</finalName>
+        <finalName>instaclustr-icarus</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -305,7 +305,7 @@
                     <transformers>
                         <transformer
                                 implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                            <mainClass>com.instaclustr.cassandra.sidecar.SidecarAggregationCommand</mainClass>
+                            <mainClass>com.instaclustr.icarus.IcarusAggregationCommand</mainClass>
                         </transformer>
 
                         <transformer

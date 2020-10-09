@@ -2,7 +2,7 @@ version: 2
 jobs:
   build:
 
-    working_directory: ~/cassandra-sidecar
+    working_directory: ~/instaclustr-icarus
 
     docker:
       - image: circleci/openjdk:8-jdk-stretch
@@ -12,19 +12,22 @@ jobs:
       - checkout
 
       - restore_cache:
-          key: cassandra-sidecar-{{ checksum "pom.xml" }}
+          key: instaclustr-icarus-{{ checksum "pom.xml" }}
 
       - run: mvn dependency:go-offline # gets the project dependencies
 
       - save_cache:
           paths:
             - ~/.m2
-          key: cassandra-sidecar-{{ checksum "pom.xml" }}
+          key: instaclustr-icarus-{{ checksum "pom.xml" }}
 
       - run: (echo "${google_application_credentials}" > /tmp/gcp.json) && mvn -PcloudTests clean install
 
       - store_test_results:
-          path: ~/cassandra-sidecar/target/cassandra-sidecar.jar
+          path: ~/instaclustr-icarus/target/surefire-reports
+
+      - store_artifacts:
+          path: ~/instaclustr-icarus/target/instaclustr-icarus.jar
 
 workflows:
   version: 2

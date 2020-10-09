@@ -10,7 +10,7 @@
   
   <test name="singlenode_tests">
     <packages>
-      <package name="com.instaclustr.sidecar.embedded.singlenode"/>
+      <package name="com.instaclustr.icarus.embedded.singlenode"/>
     </packages>
   </test>
 

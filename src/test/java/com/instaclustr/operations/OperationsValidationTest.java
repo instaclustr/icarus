@@ -19,15 +19,15 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import com.instaclustr.cassandra.sidecar.operations.rebuild.RebuildOperationRequest;
-import com.instaclustr.cassandra.sidecar.rest.SidecarClient;
-import com.instaclustr.cassandra.sidecar.rest.SidecarClient.OperationResult;
+import com.instaclustr.icarus.operations.rebuild.RebuildOperationRequest;
+import com.instaclustr.icarus.rest.IcarusClient;
+import com.instaclustr.icarus.rest.IcarusClient.OperationResult;
 import org.apache.commons.lang3.tuple.Pair;
 import org.glassfish.jersey.server.validation.ValidationError;
 import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 
-public class OperationsValidationTest extends AbstractSidecarTest {
+public class OperationsValidationTest extends AbstractIcarusTest {
 
     @Test
     public void validateRebuildRequests() {
@@ -55,7 +55,7 @@ public class OperationsValidationTest extends AbstractSidecarTest {
     @Ignore
     public void testRebuildRequests() throws IOException {
 
-        final Function<SidecarClient, List<OperationResult<?>>> invalidRequests = client -> {
+        final Function<IcarusClient, List<OperationResult<?>>> invalidRequests = client -> {
 
             final RebuildOperationRequest request1 = new RebuildOperationRequest("rebuild",
                                                                                  null,
@@ -72,7 +72,7 @@ public class OperationsValidationTest extends AbstractSidecarTest {
 
         Response response = result.getLeft().get().get(0).response;
 
-        final ValidationError[] validationErrors = objectMapper.readValue(SidecarClient.responseEntityToString(response), ValidationError[].class);
+        final ValidationError[] validationErrors = objectMapper.readValue(IcarusClient.responseEntityToString(response), ValidationError[].class);
 
         result.getLeft().get().forEach(r -> assertEquals(response.getStatus(), BAD_REQUEST.getStatusCode()));
 
