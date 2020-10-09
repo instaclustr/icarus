@@ -125,6 +125,7 @@ public class SidecarBackupOperationCoordinator extends BaseBackupOperationCoordi
                                                                                              topology);
 
         if (backupPhaseResultGatherer.hasErrors()) {
+            logger.error("Backup operation failed and it is finishing prematurely ...");
             return backupPhaseResultGatherer;
         }
 
@@ -132,6 +133,7 @@ public class SidecarBackupOperationCoordinator extends BaseBackupOperationCoordi
         try (final Backuper backuper = backuperFactoryMap.get(operation.request.storageLocation.storageProvider).createBackuper(operation.request)) {
             ClusterTopology.upload(backuper, topology, objectMapper, operation.request.snapshotTag);
         } catch (final Exception ex) {
+            ex.printStackTrace();
             backupPhaseResultGatherer.gather(operation, new OperationCoordinatorException("Unable to upload topology file", ex));
         }
 
@@ -172,7 +174,8 @@ public class SidecarBackupOperationCoordinator extends BaseBackupOperationCoordi
 
             allOf(callables.stream().map(c -> supplyAsync(c, executorService).whenComplete((result, throwable) -> {
                 if (throwable != null) {
-                    logger.warn(format("Backup against %s has failed.", result.request.storageLocation));
+                    throwable.printStackTrace();
+                    logger.warn(format("Backup against %s has failed. ", result.request.storageLocation));
                     resultGatherer.gather(result, throwable);
                 }
 

@@ -22,6 +22,8 @@ import com.instaclustr.esop.impl.restore.RestoreModules.RestoreCommitlogModule;
 import com.instaclustr.esop.impl.restore.RestoreModules.RestoreModule;
 import com.instaclustr.esop.impl.truncate.TruncateOperation;
 import com.instaclustr.esop.impl.truncate.TruncateOperationRequest;
+import com.instaclustr.guice.Application;
+import com.instaclustr.guice.ServiceManagerModule;
 import com.instaclustr.icarus.operations.cleanup.CleanupsModule;
 import com.instaclustr.icarus.operations.decommission.DecommissioningModule;
 import com.instaclustr.icarus.operations.drain.DrainModule;
@@ -33,8 +35,6 @@ import com.instaclustr.icarus.operations.scrub.ScrubModule;
 import com.instaclustr.icarus.operations.sidecar.SidecarModule;
 import com.instaclustr.icarus.operations.upgradesstables.UpgradeSSTablesModule;
 import com.instaclustr.icarus.service.ServicesModule;
-import com.instaclustr.guice.Application;
-import com.instaclustr.guice.ServiceManagerModule;
 import com.instaclustr.jackson.JacksonModule;
 import com.instaclustr.operations.OperationsModule;
 import com.instaclustr.picocli.CLIApplication;
@@ -50,7 +50,7 @@ import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Spec;
 
-@Command(name = "cassandra-sidecar",
+@Command(name = "icarus",
          description = "Sidecar management application for Cassandra.",
          versionProvider = Icarus.class,
          sortOptions = false,
