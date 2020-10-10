@@ -23,6 +23,15 @@ public class ClusterTopologyResource {
     }
 
     @GET
+    public Response getCassandraTopology() {
+        try {
+            return Response.ok(cassandraService.getClusterTopology(null)).build();
+        } catch (final Exception ex) {
+            return Response.serverError().entity(ex).build();
+        }
+    }
+
+    @GET
     @Path("{dc}")
     public Response getCassandraTopology(final @PathParam("dc") String dc) {
         try {

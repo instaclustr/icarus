@@ -140,7 +140,7 @@ public final class Icarus extends CLIApplication implements Callable<Void> {
                                                                    jmxSpec.keyStore,
                                                                    jmxSpec.keyStorePassword,
                                                                    jmxSpec.jmxClientAuth)));
-            add(new JerseyHttpServerModule(icarusSpec.httpServerAddress));
+            add(new JerseyHttpServerModule(icarusSpec.httpServerAddress, icarusSpec.disableCors));
             add(new OperationsModule(icarusSpec.operationsExpirationPeriod));
             add(new ExecutorsModule());
             add(new JacksonModule());

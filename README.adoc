@@ -1,7 +1,6 @@
 = Instaclustr Icarus
 
 image:https://img.shields.io/maven-central/v/com.instaclustr/icarus.svg?label=Maven%20Central[link=https://search.maven.org/search?q=g:%22com.instaclustr%22%20AND%20a:%22icarus%22]
-
 image:https://circleci.com/gh/instaclustr/instaclustr-icarus.svg?style=svg["Instaclustr",link="https://circleci.com/gh/instaclustr/instaclustr-icarus"]
 
 This repository is home of a sidecar for Apache Cassandra database. Sidecar is meant to be run alongside of Cassandra instance
@@ -54,8 +53,6 @@ $ java -jar instaclustr-icarus.jar cassandra-sidecar
 
 Sidecar server application accepts JSON body. Each operation we want to do against Cassandra has corresponding JSON
 payload. In turn, sidecar takes this body and calls respective JMX method to invoke it if that operation requires to do so.
-
-Feel free to consult link:spec.yaml[OpenAPI Spec]
 
 == Distributed backup and restore
 

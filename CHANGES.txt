@@ -1,3 +1,17 @@
+1.0.1
+
+- fixed GET /topology endpoint
+- it is possible to disable CORS by '--disable-cors' - integration with sidecar-common 1.3.9. CORS is enabled by default.
+
+1.0.0
+
+- renamed all references to Sidecar and used "Icarus" when possible and appropriate
+- fixed bug when hardlinking restoration failed on already existing schema.cql. This was happening
+  when a restoration was done repeatedly as truncating does not remove schema.cql copied there by restore process.
+  From now on, schema.cql is filtered out and it is not linked into data directories or Cassandra.
+
+Project was renamed to Instalustr Icarus
+
 2.0.0-alpha9-SNAPSHOT
 
 - it is possible to connect to S3 via proxy, connection details have their own entity in all backup/restore operations
