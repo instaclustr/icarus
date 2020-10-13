@@ -5,6 +5,7 @@ import static java.lang.String.format;
 import static java.util.concurrent.CompletableFuture.allOf;
 import static java.util.concurrent.CompletableFuture.supplyAsync;
 
+import javax.inject.Provider;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,8 +16,10 @@ import java.util.concurrent.ExecutorService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
+import com.instaclustr.cassandra.CassandraVersion;
 import com.instaclustr.esop.guice.BackuperFactory;
 import com.instaclustr.esop.guice.BucketServiceFactory;
+import com.instaclustr.esop.impl.KeyspaceTable;
 import com.instaclustr.esop.impl.StorageLocation;
 import com.instaclustr.esop.impl.backup.BackupOperation;
 import com.instaclustr.esop.impl.backup.BackupOperationRequest;
@@ -48,13 +51,14 @@ public class IcarusBackupOperationCoordinator extends BaseBackupOperationCoordin
 
     @Inject
     public IcarusBackupOperationCoordinator(final CassandraJMXService cassandraJMXService,
+                                            final Provider<CassandraVersion> cassandraVersionProvider,
                                             final Map<String, BackuperFactory> backuperFactoryMap,
                                             final Map<String, BucketServiceFactory> bucketServiceFactoryMap,
                                             final SidecarSpec icarusSpec,
                                             final ExecutorServiceSupplier executorServiceSupplier,
                                             final ObjectMapper objectMapper,
                                             final UploadTracker uploadTracker) {
-        super(cassandraJMXService, backuperFactoryMap, bucketServiceFactoryMap, objectMapper, uploadTracker);
+        super(cassandraJMXService, cassandraVersionProvider, backuperFactoryMap, bucketServiceFactoryMap, objectMapper, uploadTracker);
         this.icarusSpec = icarusSpec;
         this.executorServiceSupplier = executorServiceSupplier;
     }
@@ -64,6 +68,13 @@ public class IcarusBackupOperationCoordinator extends BaseBackupOperationCoordin
 
         if (!operation.request.globalRequest) {
             return super.coordinate(operation);
+        }
+
+        try {
+            KeyspaceTable.checkEntitiesToProcess(operation.request.cassandraDirectory.resolve("data"), operation.request.entities);
+        } catch (final Exception ex) {
+            logger.error(ex.getMessage());
+            return new BackupPhaseResultGatherer().gather(operation, ex);
         }
 
         ClusterTopology topology;

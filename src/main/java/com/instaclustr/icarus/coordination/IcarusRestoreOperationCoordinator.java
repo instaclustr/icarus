@@ -30,6 +30,7 @@ import com.instaclustr.esop.guice.BucketServiceFactory;
 import com.instaclustr.esop.guice.RestorerFactory;
 import com.instaclustr.esop.impl.BucketService;
 import com.instaclustr.esop.impl.StorageLocation;
+import com.instaclustr.esop.impl.restore.RestorationPhase;
 import com.instaclustr.esop.impl.restore.RestorationPhase.RestorationPhaseType;
 import com.instaclustr.esop.impl.restore.RestorationPhaseResultGatherer;
 import com.instaclustr.esop.impl.restore.RestorationStrategyResolver;

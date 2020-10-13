@@ -1,5 +1,6 @@
 package com.instaclustr.icarus.operations.scrub;
 
+import javax.inject.Provider;
 import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
@@ -8,10 +9,12 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
+import com.instaclustr.cassandra.CassandraVersion;
 import com.instaclustr.operations.FunctionWithEx;
 import com.instaclustr.operations.Operation;
 import com.instaclustr.operations.OperationFailureException;
 import jmx.org.apache.cassandra.service.CassandraJMXService;
+import jmx.org.apache.cassandra.service.cassandra2.Cassandra2StorageServiceMBean;
 import jmx.org.apache.cassandra.service.cassandra3.StorageServiceMBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,13 +24,16 @@ public class ScrubOperation extends Operation<ScrubOperationRequest> {
     private static final Logger logger = LoggerFactory.getLogger(ScrubOperation.class);
 
     private final CassandraJMXService cassandraJMXService;
+    private final Provider<CassandraVersion> cassandraVersionProvider;
 
     @Inject
     public ScrubOperation(final CassandraJMXService cassandraJMXService,
+                          final Provider<CassandraVersion> cassandraVersionProvider,
                           @Assisted final ScrubOperationRequest request) {
         super(request);
 
         this.cassandraJMXService = cassandraJMXService;
+        this.cassandraVersionProvider = cassandraVersionProvider;
     }
 
     // this constructor is not meant to be instantiated manually
@@ -56,17 +62,31 @@ public class ScrubOperation extends Operation<ScrubOperationRequest> {
                                                                                                           keyspace,
                                                                                                           tables));
         cassandraJMXService = null;
+        cassandraVersionProvider = null;
     }
 
-    @Override
-    protected void run0() throws Exception {
+    // scrubbing for Cassandra version 2
+    private void scrubCassandra2() throws Exception {
+        cassandraJMXService.doWithCassandra2StorageServiceMBean(new FunctionWithEx<Cassandra2StorageServiceMBean, Object>() {
+            @Override
+            public Object apply(final Cassandra2StorageServiceMBean ssMBean) throws Exception {
+                return ssMBean.scrub(request.disableSnapshot,
+                                     request.skipCorrupted,
+                                     !request.noValidate,
+                                     request.reinsertOverflowedTTL,
+                                     request.jobs,
+                                     request.keyspace,
+                                     request.tables == null ? new String[]{} : request.tables.toArray(new String[0]));
+            }
+        });
+    }
 
-        assert cassandraJMXService != null;
-
+    // scrubbing for Cassandra 3 and 4
+    private void scrubCassandra() throws Exception {
         final int concurrentCompactors = cassandraJMXService.doWithStorageServiceMBean(new FunctionWithEx<StorageServiceMBean, Integer>() {
             @Override
-            public Integer apply(final StorageServiceMBean object) {
-                return object.getConcurrentCompactors();
+            public Integer apply(final StorageServiceMBean ssMBean) {
+                return ssMBean.getConcurrentCompactors();
             }
         });
 
@@ -97,6 +117,18 @@ public class ScrubOperation extends Operation<ScrubOperationRequest> {
             case 2:
                 throw new OperationFailureException("Failed marking some sstables compacting in keyspace " + request.keyspace
                                                             + ", check server logs for more information");
+        }
+    }
+
+    @Override
+    protected void run0() throws Exception {
+
+        assert cassandraJMXService != null;
+
+        if (cassandraVersionProvider.get().getMajor() == 2) {
+            scrubCassandra2();
+        } else {
+            scrubCassandra();
         }
     }
 }

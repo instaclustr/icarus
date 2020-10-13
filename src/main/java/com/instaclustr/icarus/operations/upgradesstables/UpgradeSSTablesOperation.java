@@ -1,5 +1,6 @@
 package com.instaclustr.icarus.operations.upgradesstables;
 
+import javax.inject.Provider;
 import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
@@ -8,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
+import com.instaclustr.cassandra.CassandraVersion;
 import com.instaclustr.operations.FunctionWithEx;
 import com.instaclustr.operations.Operation;
 import com.instaclustr.operations.OperationFailureException;
@@ -21,13 +23,16 @@ public class UpgradeSSTablesOperation extends Operation<UpgradeSSTablesOperation
     private static final Logger logger = LoggerFactory.getLogger(UpgradeSSTablesOperation.class);
 
     private final CassandraJMXService cassandraJMXService;
+    private final Provider<CassandraVersion> cassandraVersionProvider;
 
     @Inject
     public UpgradeSSTablesOperation(final CassandraJMXService cassandraJMXService,
+                                    final Provider<CassandraVersion> cassandraVersionProvider,
                                     @Assisted final UpgradeSSTablesOperationRequest request) {
         super(request);
 
         this.cassandraJMXService = cassandraJMXService;
+        this.cassandraVersionProvider = cassandraVersionProvider;
     }
 
     // this constructor is not meant to be instantiated manually
@@ -50,24 +55,28 @@ public class UpgradeSSTablesOperation extends Operation<UpgradeSSTablesOperation
                                                                                                                     includeAllSStables,
                                                                                                                     jobs));
         cassandraJMXService = null;
+        cassandraVersionProvider = null;
     }
 
     @Override
     protected void run0() throws Exception {
         assert cassandraJMXService != null;
+        assert cassandraVersionProvider != null;
 
-        final Integer concurrentCompactors = cassandraJMXService.doWithStorageServiceMBean(new FunctionWithEx<StorageServiceMBean, Integer>() {
-            @Override
-            public Integer apply(final StorageServiceMBean object) {
-                return object.getConcurrentCompactors();
+        if (cassandraVersionProvider.get().getMajor() != 2) {
+            final Integer concurrentCompactors = cassandraJMXService.doWithStorageServiceMBean(new FunctionWithEx<StorageServiceMBean, Integer>() {
+                @Override
+                public Integer apply(final StorageServiceMBean object) {
+                    return object.getConcurrentCompactors();
+                }
+            });
+
+            if (request.jobs > concurrentCompactors) {
+                logger.info(String.format("jobs (%d) is bigger than configured concurrent_compactors (%d) on this host, using at most %d threads",
+                                          request.jobs,
+                                          concurrentCompactors,
+                                          concurrentCompactors));
             }
-        });
-
-        if (request.jobs > concurrentCompactors) {
-            logger.info(String.format("jobs (%d) is bigger than configured concurrent_compactors (%d) on this host, using at most %d threads",
-                                      request.jobs,
-                                      concurrentCompactors,
-                                      concurrentCompactors));
         }
 
         final Integer result = cassandraJMXService.doWithStorageServiceMBean(new FunctionWithEx<StorageServiceMBean, Integer>() {

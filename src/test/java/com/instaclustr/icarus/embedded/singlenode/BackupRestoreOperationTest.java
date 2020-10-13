@@ -16,9 +16,9 @@ import com.instaclustr.esop.impl.backup.BackupOperation;
 import com.instaclustr.esop.impl.backup.BackupOperationRequest;
 import com.instaclustr.esop.impl.restore.RestoreOperationRequest;
 import com.instaclustr.esop.impl.truncate.TruncateOperationRequest;
+import com.instaclustr.icarus.embedded.AbstractCassandraIcarusTest;
 import com.instaclustr.icarus.rest.IcarusClient.OperationResult;
 import com.instaclustr.io.FileUtils;
-import com.instaclustr.icarus.embedded.AbstractCassandraIcarusTest;
 import org.testng.annotations.Test;
 
 public class BackupRestoreOperationTest extends AbstractCassandraIcarusTest {
@@ -37,7 +37,7 @@ public class BackupRestoreOperationTest extends AbstractCassandraIcarusTest {
                     null, // concurrent connections
                     null, // metadata directive
                     cassandraDir.resolve("data"),
-                    DatabaseEntities.parse("system_schema," + keyspaceName),
+                    DatabaseEntities.parse(keyspaceName),
                     "stefansnapshot", // snapshot
                     "default", // k8s namespace
                     "test-sidecar-secret", // k8s secret

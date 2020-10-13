@@ -1,11 +1,14 @@
 package com.instaclustr.icarus.operations.drain;
 
+import static com.instaclustr.icarus.service.CassandraStatusService.Status.NodeState.DRAINED;
+import static com.instaclustr.icarus.service.CassandraStatusService.Status.NodeState.DRAINING;
+import static com.instaclustr.icarus.service.CassandraStatusService.Status.NodeState.NORMAL;
+import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.awaitility.Awaitility.await;
+
 import java.time.Instant;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -18,12 +21,8 @@ import com.instaclustr.operations.Operation;
 import com.instaclustr.operations.OperationFailureException;
 import jmx.org.apache.cassandra.service.CassandraJMXService;
 import jmx.org.apache.cassandra.service.cassandra3.StorageServiceMBean;
-
-import static com.instaclustr.icarus.service.CassandraStatusService.Status.NodeState.DRAINED;
-import static com.instaclustr.icarus.service.CassandraStatusService.Status.NodeState.DRAINING;
-import static com.instaclustr.icarus.service.CassandraStatusService.Status.NodeState.NORMAL;
-import static java.lang.String.format;
-import static org.awaitility.Awaitility.await;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DrainOperation extends Operation<DrainOperationRequest> {
 
@@ -79,7 +78,7 @@ public class DrainOperation extends Operation<DrainOperationRequest> {
 
                 logger.info("Draining of Cassandra node started.");
 
-                await().atMost(10, TimeUnit.MINUTES).until(ssMBean::isDrained);
+                await().atMost(10, MINUTES).until(() -> "DRAINED".equals(ssMBean.getOperationMode()));
 
                 logger.info("Draining of Cassandra node finished.");
 

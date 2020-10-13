@@ -35,7 +35,7 @@ public class SingleNodeDistributedBackupRestoreTest extends AbstractCassandraIca
                 15, // concurrentConnections
                 null, // metadata
                 cassandraDir.resolve("data"), // cassandra dir
-                DatabaseEntities.parse("system_schema," + keyspaceName), // entities
+                DatabaseEntities.parse(keyspaceName), //DatabaseEntities.parse("system_schema," + keyspaceName), // entities
                 snapshotName, // snapshot
                 "default", // k8s namespace
                 "test-sidecar-secret", // k8s secret

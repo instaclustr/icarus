@@ -26,6 +26,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.instaclustr.icarus.Icarus;
 import com.instaclustr.icarus.rest.IcarusClient;
+import com.instaclustr.io.FileUtils;
 import com.instaclustr.measure.Time;
 import com.instaclustr.picocli.CassandraJMXSpec;
 import com.instaclustr.picocli.typeconverter.CassandraJMXServiceURLTypeConverter;
@@ -103,13 +104,21 @@ public abstract class AbstractCassandraIcarusTest {
         }
     }
 
-    protected EmbeddedCassandraFactory defaultNodeFactory() {
+    protected EmbeddedCassandraFactory defaultNodeFactory() throws Exception {
         EmbeddedCassandraFactory cassandraInstanceFactory = new EmbeddedCassandraFactory();
         cassandraInstanceFactory.setWorkingDirectory(cassandraDir);
         cassandraInstanceFactory.setArtifact(CASSANDRA_ARTIFACT);
         cassandraInstanceFactory.getJvmOptions().add("-Xmx1g");
         cassandraInstanceFactory.getJvmOptions().add("-Xms1g");
         cassandraInstanceFactory.setJmxLocalPort(7199);
+
+        if (CASSANDRA_VERSION.startsWith("2")) {
+            FileUtils.createDirectory(cassandraDir.resolve("data").resolve("data"));
+
+            cassandraInstanceFactory.getConfigProperties().put("data_file_directories", new String[]{
+                    cassandraDir.resolve("data").resolve("data").toAbsolutePath().toString()
+            });
+        }
 
         return cassandraInstanceFactory;
     }
@@ -266,11 +275,21 @@ public abstract class AbstractCassandraIcarusTest {
 
         if (CASSANDRA_VERSION.startsWith("4")) {
             factory.setConfig(new ClassPathResource("first-4.yaml"));
+        } else if (CASSANDRA_VERSION.startsWith("2")) {
+            factory.setConfig(new ClassPathResource("first-2.yaml"));
         } else {
             factory.setConfig(new ClassPathResource("first.yaml"));
         }
 
         factory.setJmxLocalPort(7199);
+
+        if (CASSANDRA_VERSION.startsWith("2")) {
+            FileUtils.createDirectory(factory.getWorkingDirectory().resolve("data").resolve("data"));
+
+            factory.getConfigProperties().put("data_file_directories", new String[]{
+                    factory.getWorkingDirectory().resolve("data").resolve("data").toAbsolutePath().toString()
+            });
+        }
 
         Cassandra firstNode = factory.create();
 
@@ -279,11 +298,21 @@ public abstract class AbstractCassandraIcarusTest {
 
         if (CASSANDRA_VERSION.startsWith("4")) {
             factory.setConfig(new ClassPathResource("second-4.yaml"));
+        } else if (CASSANDRA_VERSION.startsWith("2")) {
+            factory.setConfig(new ClassPathResource("second-2.yaml"));
         } else {
             factory.setConfig(new ClassPathResource("second.yaml"));
         }
 
         factory.setJmxLocalPort(7200);
+
+        if (CASSANDRA_VERSION.startsWith("2")) {
+            FileUtils.createDirectory(factory.getWorkingDirectory().resolve("data").resolve("data"));
+
+            factory.getConfigProperties().put("data_file_directories", new String[]{
+                    factory.getWorkingDirectory().resolve("data").resolve("data").toAbsolutePath().toString()
+            });
+        }
 
         Cassandra secondNode = factory.create();
 
