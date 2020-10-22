@@ -43,7 +43,7 @@ import org.testng.annotations.BeforeMethod;
 
 public abstract class AbstractCassandraIcarusTest {
 
-    private static final Logger logger = LoggerFactory.getLogger(AbstractCassandraIcarusTest.class);
+    protected static final Logger logger = LoggerFactory.getLogger(AbstractCassandraIcarusTest.class);
 
     protected static final String CASSANDRA_VERSION = System.getProperty("cassandra.version", "3.11.8");
 

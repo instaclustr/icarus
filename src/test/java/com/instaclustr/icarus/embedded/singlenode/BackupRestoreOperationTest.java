@@ -53,10 +53,30 @@ public class BackupRestoreOperationTest extends AbstractCassandraIcarusTest {
             );
 
             final OperationResult<BackupOperation> result = icarusHolder.icarusClient.backup(backupOperationRequest);
-
             icarusHolder.icarusClient.waitForCompleted(result);
 
+            // wait 10 seconds and do another backup, with exact same request, manifest will differ just on timestamp
+
+            // put more data
+
+            logger.info(String.format("content of %s.%s before adding more data", keyspaceName, tableName));
+
+            dbHelper.dump(keyspaceName, tableName);
+
+            dbHelper.addData(keyspaceName, tableName);
+
+            logger.info(String.format("content of %s.%s after adding more data", keyspaceName, tableName));
+
+            dbHelper.dump(keyspaceName, tableName);
+
+            Thread.sleep(10000);
+
+            final OperationResult<BackupOperation> result2 = icarusHolder.icarusClient.backup(backupOperationRequest);
+            icarusHolder.icarusClient.waitForCompleted(result2);
+
             icarusHolder.icarusClient.waitForCompleted(icarusHolder.icarusClient.truncate(new TruncateOperationRequest(keyspaceName, tableName)));
+
+            // restore, it will restore into the latest one
 
             final RestoreOperationRequest restoreOperationRequest = new RestoreOperationRequest(
                     "restore", // type
@@ -99,6 +119,7 @@ public class BackupRestoreOperationTest extends AbstractCassandraIcarusTest {
 
             icarusHolder.icarusClient.waitForCompleted(icarusHolder.icarusClient.restore(restoreOperationRequest));
 
+            logger.info(String.format("content of %s.%s after restore", keyspaceName, tableName));
             dbHelper.dump(keyspaceName, tableName);
         } catch (final Exception ex) {
             FileUtils.deleteDirectory(cassandraDir);
