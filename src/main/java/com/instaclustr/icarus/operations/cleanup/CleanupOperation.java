@@ -2,6 +2,7 @@ package com.instaclustr.icarus.operations.cleanup;
 
 import javax.inject.Inject;
 import java.time.Instant;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -32,16 +33,16 @@ public class CleanupOperation extends Operation<CleanupOperationRequest> {
                              @JsonProperty("id") final UUID id,
                              @JsonProperty("creationTime") final Instant creationTime,
                              @JsonProperty("state") final State state,
-                             @JsonProperty("failureCause") final Throwable failureCause,
+                             @JsonProperty("errors") final List<Error> errors,
                              @JsonProperty("progress") final float progress,
                              @JsonProperty("startTime") final Instant startTime,
                              @JsonProperty("keyspace") final String keyspace,
                              @JsonProperty("tables") final Set<String> tables,
                              @JsonProperty("jobs") final int jobs) {
-        super(type, id, creationTime, state, failureCause, progress, startTime, new CleanupOperationRequest(type,
-                                                                                                            keyspace,
-                                                                                                            tables,
-                                                                                                            jobs));
+        super(type, id, creationTime, state, errors, progress, startTime, new CleanupOperationRequest(type,
+                                                                                                      keyspace,
+                                                                                                      tables,
+                                                                                                      jobs));
         cassandraJMXService = null;
     }
 

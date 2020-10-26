@@ -23,7 +23,6 @@ import com.instaclustr.esop.impl.KeyspaceTable;
 import com.instaclustr.esop.impl.StorageLocation;
 import com.instaclustr.esop.impl.backup.BackupOperation;
 import com.instaclustr.esop.impl.backup.BackupOperationRequest;
-import com.instaclustr.esop.impl.backup.BackupPhaseResultGatherer;
 import com.instaclustr.esop.impl.backup.Backuper;
 import com.instaclustr.esop.impl.backup.UploadTracker;
 import com.instaclustr.esop.impl.backup.coordination.BaseBackupOperationCoordinator;
@@ -33,7 +32,6 @@ import com.instaclustr.icarus.rest.IcarusClient;
 import com.instaclustr.icarus.rest.IcarusClient.OperationResult;
 import com.instaclustr.operations.GlobalOperationProgressTracker;
 import com.instaclustr.operations.Operation;
-import com.instaclustr.operations.ResultGatherer;
 import com.instaclustr.sidecar.picocli.SidecarSpec;
 import com.instaclustr.threading.Executors.ExecutorServiceSupplier;
 import jmx.org.apache.cassandra.service.CassandraJMXService;
@@ -64,17 +62,19 @@ public class IcarusBackupOperationCoordinator extends BaseBackupOperationCoordin
     }
 
     @Override
-    public ResultGatherer<BackupOperationRequest> coordinate(final Operation<BackupOperationRequest> operation) {
+    public void coordinate(final Operation<BackupOperationRequest> operation) {
 
         if (!operation.request.globalRequest) {
-            return super.coordinate(operation);
+            super.coordinate(operation);
+            return;
         }
 
         try {
             KeyspaceTable.checkEntitiesToProcess(operation.request.cassandraDirectory.resolve("data"), operation.request.entities);
         } catch (final Exception ex) {
             logger.error(ex.getMessage());
-            return new BackupPhaseResultGatherer().gather(operation, ex);
+            operation.addError(Operation.Error.from(ex));
+            return;
         }
 
         ClusterTopology topology;
@@ -82,7 +82,8 @@ public class IcarusBackupOperationCoordinator extends BaseBackupOperationCoordin
         try {
             topology = new CassandraClusterTopology(cassandraJMXService, operation.request.dc).act();
         } catch (final Exception ex) {
-            return new BackupPhaseResultGatherer().gather(operation, new OperationCoordinatorException("Unable to get cluster topology.", ex));
+            operation.addError(Operation.Error.from(ex, "Unable to get cluster topology."));
+            return;
         }
 
         logger.info("Resolved datacenter: {}", operation.request.dc == null ? "all of them" : operation.request.dc);
@@ -123,44 +124,39 @@ public class IcarusBackupOperationCoordinator extends BaseBackupOperationCoordin
 
                 return backupOperation;
             } catch (final Exception ex) {
-                throw new OperationCoordinatorException(format("Unable to prepare backup operation for client %s.", client.getHost()), ex);
+                throw new RuntimeException(format("Unable to prepare backup operation for client %s.", client.getHost()), ex);
             }
         };
 
 
-        final BackupPhaseResultGatherer backupPhaseResultGatherer = executeDistributedBackup(operation,
-                                                                                             icarusClientMap,
-                                                                                             backupRequestPreparation,
-                                                                                             topology);
+        executeDistributedBackup(operation,
+                                 icarusClientMap,
+                                 backupRequestPreparation,
+                                 topology);
 
-        if (backupPhaseResultGatherer.hasErrors()) {
+        if (operation.hasErrors()) {
             logger.error("Backup operation failed and it is finishing prematurely ...");
-            return backupPhaseResultGatherer;
+            return;
         }
 
         // we do not look if uploadClusterTopology is true or not, global request coordinator will upload it every time
         try (final Backuper backuper = backuperFactoryMap.get(operation.request.storageLocation.storageProvider).createBackuper(operation.request)) {
             ClusterTopology.upload(backuper, topology, objectMapper, operation.request.snapshotTag);
         } catch (final Exception ex) {
-            ex.printStackTrace();
-            backupPhaseResultGatherer.gather(operation, new OperationCoordinatorException("Unable to upload topology file", ex));
+            operation.addError(Operation.Error.from(new OperationCoordinatorException("Unable to upload topology file", ex)));
         }
-
-        return backupPhaseResultGatherer;
     }
 
     private interface BackupRequestPreparation {
 
-        Operation<BackupOperationRequest> prepare(final IcarusClient client, final BackupOperationRequest globalRequest, final ClusterTopology topology) throws OperationCoordinatorException;
+        Operation<BackupOperationRequest> prepare(final IcarusClient client, final BackupOperationRequest globalRequest, final ClusterTopology topology);
     }
 
-    private BackupPhaseResultGatherer executeDistributedBackup(final Operation<BackupOperationRequest> globalOperation,
-                                                               final Map<InetAddress, IcarusClient> icarusClientMap,
-                                                               final BackupRequestPreparation requestPreparation,
-                                                               final ClusterTopology topology) {
+    private void executeDistributedBackup(final Operation<BackupOperationRequest> globalOperation,
+                                          final Map<InetAddress, IcarusClient> icarusClientMap,
+                                          final BackupRequestPreparation requestPreparation,
+                                          final ClusterTopology topology) {
         final ExecutorService executorService = executorServiceSupplier.get(MAX_NUMBER_OF_CONCURRENT_OPERATIONS);
-
-        final BackupPhaseResultGatherer resultGatherer = new BackupPhaseResultGatherer();
 
         try {
             final List<BackupOperationCallable> callables = new ArrayList<>();
@@ -169,14 +165,9 @@ public class IcarusBackupOperationCoordinator extends BaseBackupOperationCoordin
             // create
 
             for (final Map.Entry<InetAddress, IcarusClient> entry : icarusClientMap.entrySet()) {
-                try {
-                    callables.add(new BackupOperationCallable(requestPreparation.prepare(entry.getValue(), globalOperation.request, topology),
-                                                              entry.getValue(),
-                                                              progressTracker));
-                } catch (final OperationCoordinatorException e) {
-                    resultGatherer.gather(globalOperation, e);
-                    return resultGatherer;
-                }
+                callables.add(new BackupOperationCallable(requestPreparation.prepare(entry.getValue(), globalOperation.request, topology),
+                                                          entry.getValue(),
+                                                          progressTracker));
             }
 
             // submit & gather results
@@ -184,8 +175,9 @@ public class IcarusBackupOperationCoordinator extends BaseBackupOperationCoordin
             allOf(callables.stream().map(c -> supplyAsync(c, executorService).whenComplete((result, throwable) -> {
                 if (throwable != null) {
                     throwable.printStackTrace();
-                    logger.warn(format("Backup against %s has failed. ", result.request.storageLocation));
-                    resultGatherer.gather(result, throwable);
+                    logger.warn(format("Backup to %s has failed. ", result.request.storageLocation));
+                } else {
+                    globalOperation.addErrors(result.errors);
                 }
 
                 try {
@@ -196,12 +188,10 @@ public class IcarusBackupOperationCoordinator extends BaseBackupOperationCoordin
             })).toArray(CompletableFuture<?>[]::new)).get();
         } catch (ExecutionException | InterruptedException ex) {
             ex.printStackTrace();
-            resultGatherer.gather(globalOperation, new OperationCoordinatorException("Unable to coordinate backup! " + ex.getMessage(), ex));
+            globalOperation.addError(Operation.Error.from(new OperationCoordinatorException("Unable to coordinate backup! " + ex.getMessage(), ex)));
         } finally {
             executorService.shutdownNow();
         }
-
-        return resultGatherer;
     }
 
     private static class BackupOperationCallable extends OperationCallable<BackupOperation, BackupOperationRequest> {

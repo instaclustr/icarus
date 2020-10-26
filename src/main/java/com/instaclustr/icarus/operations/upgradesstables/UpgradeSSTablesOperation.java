@@ -2,6 +2,7 @@ package com.instaclustr.icarus.operations.upgradesstables;
 
 import javax.inject.Provider;
 import java.time.Instant;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -42,18 +43,18 @@ public class UpgradeSSTablesOperation extends Operation<UpgradeSSTablesOperation
                                      @JsonProperty("id") final UUID id,
                                      @JsonProperty("creationTime") final Instant creationTime,
                                      @JsonProperty("state") final State state,
-                                     @JsonProperty("failureCause") final Throwable failureCause,
+                                     @JsonProperty("errors") final List<Error> errors,
                                      @JsonProperty("progress") final float progress,
                                      @JsonProperty("startTime") final Instant startTime,
                                      @JsonProperty("keyspace") final String keyspace,
                                      @JsonProperty("tables") final Set<String> tables,
                                      @JsonProperty("includeAllSStables") final boolean includeAllSStables,
                                      @JsonProperty("jobs") final int jobs) {
-        super(type, id, creationTime, state, failureCause, progress, startTime, new UpgradeSSTablesOperationRequest(type,
-                                                                                                                    keyspace,
-                                                                                                                    tables,
-                                                                                                                    includeAllSStables,
-                                                                                                                    jobs));
+        super(type, id, creationTime, state, errors, progress, startTime, new UpgradeSSTablesOperationRequest(type,
+                                                                                                              keyspace,
+                                                                                                              tables,
+                                                                                                              includeAllSStables,
+                                                                                                              jobs));
         cassandraJMXService = null;
         cassandraVersionProvider = null;
     }

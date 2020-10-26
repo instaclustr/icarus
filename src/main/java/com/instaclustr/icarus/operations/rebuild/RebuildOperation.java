@@ -4,6 +4,7 @@ import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -34,18 +35,18 @@ public class RebuildOperation extends Operation<RebuildOperationRequest> {
                              @JsonProperty("id") final UUID id,
                              @JsonProperty("creationTime") final Instant creationTime,
                              @JsonProperty("state") final State state,
-                             @JsonProperty("failureCause") final Throwable failureCause,
+                             @JsonProperty("errors") final List<Error> errors,
                              @JsonProperty("progress") final float progress,
                              @JsonProperty("startTime") final Instant startTime,
                              @JsonProperty("sourceDC") final String sourceDC,
                              @JsonProperty("keyspace") final String keyspace,
                              @JsonProperty("specificTokens") final Set<RebuildOperationRequest.TokenRange> specificTokens,
                              @JsonProperty("specificSources") final Set<String> specificSources) {
-        super(type, id, creationTime, state, failureCause, progress, startTime, new RebuildOperationRequest(type,
-                                                                                                            sourceDC,
-                                                                                                            keyspace,
-                                                                                                            specificTokens,
-                                                                                                            specificSources));
+        super(type, id, creationTime, state, errors, progress, startTime, new RebuildOperationRequest(type,
+                                                                                                      sourceDC,
+                                                                                                      keyspace,
+                                                                                                      specificTokens,
+                                                                                                      specificSources));
         cassandraJMXService = null;
     }
 

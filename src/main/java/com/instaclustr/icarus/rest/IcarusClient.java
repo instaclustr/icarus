@@ -309,7 +309,7 @@ public class IcarusClient implements Closeable {
         return CharStreams.toString(new InputStreamReader((InputStream) response.getEntity()));
     }
 
-    private synchronized <T extends OperationRequest, O extends Operation<?>> OperationResult<O> performOperationSubmission(final T operationRequest) {
+    public synchronized <T extends OperationRequest, O extends Operation<?>> OperationResult<O> performOperationSubmission(final T operationRequest) {
 
         final Response post = operationsWebTarget.request(APPLICATION_JSON).post(Entity.json(operationRequest));
 

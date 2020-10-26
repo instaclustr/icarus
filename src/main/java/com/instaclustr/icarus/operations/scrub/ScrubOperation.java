@@ -2,6 +2,7 @@ package com.instaclustr.icarus.operations.scrub;
 
 import javax.inject.Provider;
 import java.time.Instant;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -43,7 +44,7 @@ public class ScrubOperation extends Operation<ScrubOperationRequest> {
                            @JsonProperty("id") final UUID id,
                            @JsonProperty("creationTime") final Instant creationTime,
                            @JsonProperty("state") final State state,
-                           @JsonProperty("failureCause") final Throwable failureCause,
+                           @JsonProperty("errors") final List<Error> errors,
                            @JsonProperty("progress") final float progress,
                            @JsonProperty("startTime") final Instant startTime,
                            @JsonProperty("disableSnapshot") final boolean disableSnapshot,
@@ -53,14 +54,14 @@ public class ScrubOperation extends Operation<ScrubOperationRequest> {
                            @JsonProperty("jobs") final int jobs,
                            @JsonProperty("keyspace") final String keyspace,
                            @JsonProperty("tables") final Set<String> tables) {
-        super(type, id, creationTime, state, failureCause, progress, startTime, new ScrubOperationRequest(type,
-                                                                                                          disableSnapshot,
-                                                                                                          skipCorrupted,
-                                                                                                          noValidate,
-                                                                                                          reinsertOverflowedTTL,
-                                                                                                          jobs,
-                                                                                                          keyspace,
-                                                                                                          tables));
+        super(type, id, creationTime, state, errors, progress, startTime, new ScrubOperationRequest(type,
+                                                                                                    disableSnapshot,
+                                                                                                    skipCorrupted,
+                                                                                                    noValidate,
+                                                                                                    reinsertOverflowedTTL,
+                                                                                                    jobs,
+                                                                                                    keyspace,
+                                                                                                    tables));
         cassandraJMXService = null;
         cassandraVersionProvider = null;
     }

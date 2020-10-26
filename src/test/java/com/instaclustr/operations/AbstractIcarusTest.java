@@ -1,6 +1,7 @@
 package com.instaclustr.operations;
 
 
+import static com.instaclustr.operations.OperationBindings.installOperationBindings;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -8,12 +9,16 @@ import static org.mockito.Mockito.when;
 import javax.validation.Validation;
 import javax.validation.Validator;
 import java.net.InetSocketAddress;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -24,6 +29,7 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.Provider;
+import com.google.inject.assistedinject.Assisted;
 import com.instaclustr.cassandra.CassandraVersion;
 import com.instaclustr.cassandra.service.CassandraWaiter;
 import com.instaclustr.cassandra.service.CqlSessionService;
@@ -39,10 +45,14 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 
 public abstract class AbstractIcarusTest {
+
+    protected static final Logger logger = LoggerFactory.getLogger(AbstractIcarusTest.class);
 
     @Inject
     ResourceConfig resourceConfig;
@@ -102,6 +112,15 @@ public abstract class AbstractIcarusTest {
             add(new ExecutorsModule());
             add(new JacksonModule());
             addAll(Icarus.operationModules());
+            add(new AbstractModule() {
+                @Override
+                protected void configure() {
+                    installOperationBindings(binder(),
+                                             "failing",
+                                             FailingOperationRequest.class,
+                                             FailingOperation.class);
+                }
+            });
         }};
 
         modules.addAll(getModules());
@@ -152,5 +171,40 @@ public abstract class AbstractIcarusTest {
         serverService.startAsync();
 
         return Pair.of(responseRefs, finished);
+    }
+
+    protected static final class FailingOperationRequest extends OperationRequest {
+        public FailingOperationRequest() {
+            this("failing");
+        }
+
+        @JsonCreator
+        public FailingOperationRequest(@JsonProperty("type") final String type) {
+            this.type = type;
+        }
+    }
+
+    protected static final class FailingOperation extends Operation<FailingOperationRequest> {
+
+        @Inject
+        public FailingOperation(@Assisted final FailingOperationRequest request) {
+            super(request);
+        }
+
+        @JsonCreator
+        protected FailingOperation(@JsonProperty("type") final String type,
+                                   @JsonProperty("id") final UUID id,
+                                   @JsonProperty("creationTime") final Instant creationTime,
+                                   @JsonProperty("state") final State state,
+                                   @JsonProperty("errors") final List<Error> errors,
+                                   @JsonProperty("progress") final float progress,
+                                   @JsonProperty("startTime") final Instant startTime) {
+            super(type, id, creationTime, state, errors, progress, startTime, new FailingOperationRequest(type));
+        }
+
+        @Override
+        protected void run0() throws Exception {
+            throw new IllegalStateException("this is exception", new RuntimeException("this is some cause!"));
+        }
     }
 }

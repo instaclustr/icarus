@@ -1,6 +1,7 @@
 package com.instaclustr.icarus.operations.restart;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -55,10 +56,10 @@ public class RestartOperation extends Operation<RestartOperationRequest> {
                              @JsonProperty("id") final UUID id,
                              @JsonProperty("creationTime") final Instant creationTime,
                              @JsonProperty("state") final State state,
-                             @JsonProperty("failureCause") final Throwable failureCause,
+                             @JsonProperty("errors") final List<Error> errors,
                              @JsonProperty("progress") final float progress,
                              @JsonProperty("startTime") final Instant startTime) {
-        super(type, id, creationTime, state, failureCause, progress, startTime, new RestartOperationRequest(type));
+        super(type, id, creationTime, state, errors, progress, startTime, new RestartOperationRequest(type));
         this.cassandraJMXService = null;
         this.statusService = null;
         this.coreV1ApiProvider = null;
@@ -87,8 +88,9 @@ public class RestartOperation extends Operation<RestartOperationRequest> {
 
         drainOperation.run();
 
-        if (drainOperation.failureCause != null) {
-            throw new OperationFailureException("Unable to restart node because drain operation was not successful.", drainOperation.failureCause);
+        if (!drainOperation.errors.isEmpty()) {
+            addErrors(drainOperation.errors);
+            return;
         }
 
         // kill, killing will cause restart

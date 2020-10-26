@@ -30,20 +30,17 @@ import com.instaclustr.esop.guice.BucketServiceFactory;
 import com.instaclustr.esop.guice.RestorerFactory;
 import com.instaclustr.esop.impl.BucketService;
 import com.instaclustr.esop.impl.StorageLocation;
-import com.instaclustr.esop.impl.restore.RestorationPhase;
 import com.instaclustr.esop.impl.restore.RestorationPhase.RestorationPhaseType;
-import com.instaclustr.esop.impl.restore.RestorationPhaseResultGatherer;
 import com.instaclustr.esop.impl.restore.RestorationStrategyResolver;
 import com.instaclustr.esop.impl.restore.RestoreOperation;
 import com.instaclustr.esop.impl.restore.RestoreOperationRequest;
 import com.instaclustr.esop.impl.restore.coordination.BaseRestoreOperationCoordinator;
-import com.instaclustr.icarus.rest.IcarusClient;
 import com.instaclustr.esop.topology.CassandraClusterTopology;
 import com.instaclustr.esop.topology.CassandraClusterTopology.ClusterTopology;
+import com.instaclustr.icarus.rest.IcarusClient;
 import com.instaclustr.operations.GlobalOperationProgressTracker;
 import com.instaclustr.operations.Operation;
 import com.instaclustr.operations.OperationsService;
-import com.instaclustr.operations.ResultGatherer;
 import com.instaclustr.sidecar.picocli.SidecarSpec;
 import com.instaclustr.threading.Executors.ExecutorServiceSupplier;
 import jmx.org.apache.cassandra.service.CassandraJMXService;
@@ -81,7 +78,7 @@ public class IcarusRestoreOperationCoordinator extends BaseRestoreOperationCoord
     }
 
     @Override
-    public ResultGatherer<RestoreOperationRequest> coordinate(final Operation<RestoreOperationRequest> operation) throws OperationCoordinatorException {
+    public void coordinate(final Operation<RestoreOperationRequest> operation) throws OperationCoordinatorException {
 
         try (final BucketService bucketService = bucketServiceFactoryMap.get(operation.request.storageLocation.storageProvider).createBucketService(operation.request)) {
             bucketService.checkBucket(operation.request.storageLocation.bucket, false);
@@ -138,7 +135,8 @@ public class IcarusRestoreOperationCoordinator extends BaseRestoreOperationCoord
                 throw new IllegalStateException("We can not run two normal restoration requests simultaneously.");
             }
 
-            return super.coordinate(operation);
+            super.coordinate(operation);
+            return;
         }
 
         // if it is a global request, we will coordinate whole restore across a cluster in this operation
@@ -161,28 +159,27 @@ public class IcarusRestoreOperationCoordinator extends BaseRestoreOperationCoord
             throw new IllegalStateException(format("Restoration coordination has to start with %s phase.", DOWNLOAD));
         }
 
-        final RestorationPhaseResultGatherer gatherer = new RestorationPhaseResultGatherer();
-
         try (final IcarusWrapper icarusWrapper = new IcarusWrapper(getSidecarClients())) {
             final IcarusWrapper oneClient = getOneClient(icarusWrapper);
 
             final ResultSupplier[] resultSuppliers = new ResultSupplier[]{
-                    () -> gatherer.combine(executePhase(new InitPhasePreparation(), operation, oneClient)),
-                    () -> gatherer.combine(executePhase(new DownloadPhasePreparation(), operation, icarusWrapper)),
-                    () -> gatherer.combine(executePhase(new TruncatePhasePreparation(), operation, oneClient)),
-                    () -> gatherer.combine(executePhase(new ImportingPhasePreparation(), operation, icarusWrapper)),
-                    () -> gatherer.combine(executePhase(new CleaningPhasePreparation(), operation, icarusWrapper)),
+                    () -> executePhase(new InitPhasePreparation(), operation, oneClient),
+                    () -> executePhase(new DownloadPhasePreparation(), operation, icarusWrapper),
+                    () -> executePhase(new TruncatePhasePreparation(), operation, oneClient),
+                    () -> executePhase(new ImportingPhasePreparation(), operation, icarusWrapper),
+                    () -> executePhase(new CleaningPhasePreparation(), operation, icarusWrapper),
             };
 
             for (final ResultSupplier supplier : resultSuppliers) {
-                if (supplier.getWithEx().hasErrors())
-                    return gatherer;
+                supplier.getWithEx();
+
+                if (operation.hasErrors()) {
+                    break;
+                }
             }
         } catch (final Exception ex) {
-            gatherer.gather(operation, new OperationCoordinatorException("Unable to coordinate distributed restore.", ex));
+            operation.addError(Operation.Error.from(new OperationCoordinatorException("Unable to coordinate distributed restore.", ex)));
         }
-
-        return gatherer;
     }
 
     public static class IcarusWrapper implements Closeable {
@@ -211,7 +208,7 @@ public class IcarusRestoreOperationCoordinator extends BaseRestoreOperationCoord
     @FunctionalInterface
     private interface ResultSupplier {
 
-        ResultGatherer<RestoreOperationRequest> getWithEx() throws Exception;
+        void getWithEx() throws Exception;
     }
 
     private IcarusWrapper getOneClient(final IcarusWrapper icarusWrapper) {
@@ -302,12 +299,10 @@ public class IcarusRestoreOperationCoordinator extends BaseRestoreOperationCoord
         return constructSidecars(clusterTopology.clusterName, clusterTopology.endpoints, clusterTopology.endpointDcs, icarusSpec, objectMapper);
     }
 
-    private RestorationPhaseResultGatherer executePhase(final PhasePreparation phasePreparation,
-                                                        final Operation<RestoreOperationRequest> globalOperation,
-                                                        final IcarusWrapper icarusWrapper) throws OperationCoordinatorException {
+    private void executePhase(final PhasePreparation phasePreparation,
+                              final Operation<RestoreOperationRequest> globalOperation,
+                              final IcarusWrapper icarusWrapper) throws OperationCoordinatorException {
         final ExecutorService executorService = executorServiceSupplier.get(MAX_NUMBER_OF_CONCURRENT_OPERATIONS);
-
-        final RestorationPhaseResultGatherer resultGatherer = new RestorationPhaseResultGatherer();
 
         try {
             final List<RestoreOperationCallable> callables = new ArrayList<>();
@@ -325,18 +320,26 @@ public class IcarusRestoreOperationCoordinator extends BaseRestoreOperationCoord
 
             allOf(callables.stream().map(c -> supplyAsync(c, executorService).whenComplete((result, throwable) -> {
                 if (throwable != null) {
-                    resultGatherer.gather(result, throwable);
+                    throwable.printStackTrace();
+                    logger.warn(format("Restore from %s has failed. ", result.request.storageLocation));
+                    globalOperation.addError(Operation.Error.from(throwable));
+                } else {
+                    // add errors if any, the fact that throwable is null does not neccessarilly mean that underlaying operation has not failed.
+                    globalOperation.addErrors(result.errors);
+                }
+
+                try {
+                    result.close();
+                } catch (final Exception ex) {
+                    logger.error(format("Unable to close a sidecar client for operation %s upon gathering results from other sidecars: %s", result.id, ex.getMessage()));
                 }
             })).toArray(CompletableFuture<?>[]::new)).get();
 
         } catch (ExecutionException | InterruptedException ex) {
-            ex.printStackTrace();
-            resultGatherer.gather(globalOperation, new OperationCoordinatorException("Unable to coordinate restoration!", ex));
+            globalOperation.addError(Operation.Error.from(new OperationCoordinatorException("Unable to coordinate restoration!", ex)));
         } finally {
             executorService.shutdownNow();
         }
-
-        return resultGatherer;
     }
 
     private static class RestoreOperationCallable extends OperationCallable<RestoreOperation, RestoreOperationRequest> {

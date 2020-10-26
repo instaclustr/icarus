@@ -62,22 +62,17 @@ public abstract class OperationCallable<O extends Operation<T>, T extends Operat
             try {
                 if (operationResult.operation != null) {
                     operation = icarusClient.getOperation(operationResult.operation.id, operation.request);
-                    final State returnedState = operation.state;
 
                     float delta = operation.progress - floatAtomicReference.get();
                     floatAtomicReference.set(floatAtomicReference.get() + delta);
 
                     progressTracker.update(delta);
 
-                    if (FAILED == returnedState) {
-                        throw new OperationCoordinatorException(format("Operation %s of type %s in phase %s against host %s has failed.",
-                                                                       operation.id,
-                                                                       operation.request.type,
-                                                                       phase,
-                                                                       icarusClient.getHost()));
+                    if (FAILED == operation.state) {
+                        progressTracker.complete();
                     }
 
-                    return State.TERMINAL_STATES.contains(returnedState);
+                    return State.TERMINAL_STATES.contains(operation.state);
                 }
 
                 throw new OperationCoordinatorException(format("Error while fetching state of operation %s of type %s in phase %s against host %s, returned code: %s",
@@ -87,12 +82,16 @@ public abstract class OperationCallable<O extends Operation<T>, T extends Operat
                                                                icarusClient.getHost(),
                                                                operationResult.response.getStatus()));
             } catch (final Exception ex) {
+                // this is reached only in case the response itself can not be fetched
+                // if that response itself is returned but that remote operation failed,
+                // it would be treated in try block and returned from there
                 progressTracker.complete();
-                operation.failureCause = null;
                 operation.state = FAILED;
                 operation.completionTime = Instant.now();
-                operation.failureCause = ex;
-                throw ex;
+
+                operation.addError(Operation.Error.from(icarusClient.getHost(), ex));
+
+                return true;
             }
         });
 
