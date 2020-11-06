@@ -30,6 +30,15 @@
         <maven.javadoc.plugin.version>3.1.1</maven.javadoc.plugin.version>
         <maven.source.plugin.version>3.1.0</maven.source.plugin.version>
 
+        <maintainer>Various &lt;support@instaclustr.com&gt;</maintainer>
+        <version.jdeb>1.8</version.jdeb>
+        <version.rpm>1.5.0</version.rpm>
+
+        <git.commit.id/>
+        <git.build.time/>
+
+        <outputDirectory>${project.build.directory}</outputDirectory>
+
         <java.version>1.8</java.version>
 
         <maven.compiler.source>${java.version}</maven.compiler.source>
@@ -285,7 +294,7 @@
     </profiles>
 
     <build>
-        <finalName>instaclustr-icarus</finalName>
+        <finalName>icarus</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -299,6 +308,16 @@
                                 <exclude>META-INF/*.SF</exclude>
                                 <exclude>META-INF/*.DSA</exclude>
                                 <exclude>META-INF/*.RSA</exclude>
+                                <exclude>META-INF/*.MF</exclude>
+                                <exclude>META-INF/DEPENDENCIES</exclude>
+                                <exclude>META-INF/LICENCE</exclude>
+                                <exclude>META-INF/NOTICE</exclude>
+                                <exclude>META-INF/NOTICE.txt</exclude>
+                                <exclude>META-INF/LICENCE.txt</exclude>
+                                <exclude>META-INF/LICENSE.txt</exclude>
+                                <exclude>META-INF/LICENSE</exclude>
+                                <exclude>LICENSE.txt</exclude>
+                                <exclude>CHANGES.txt</exclude>
                             </excludes>
                         </filter>
                     </filters>
@@ -326,6 +345,7 @@
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>${maven.jar.plugin.version}</version>
                 <configuration>
+                    <outputDirectory>${outputDirectory}</outputDirectory>
                     <archive>
                         <manifest>
                             <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
@@ -380,6 +400,74 @@
                         <goals>
                             <goal>jar-no-fork</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.vafer</groupId>
+                <artifactId>jdeb</artifactId>
+                <version>${version.jdeb}</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jdeb</goal>
+                        </goals>
+                        <configuration>
+                            <name>${project.artifactId}</name>
+                            <deb>${outputDirectory}/[[name]]_${project.version}.deb</deb>
+                            <dataSet>
+                                <data>
+                                    <src>${outputDirectory}/${project.build.finalName}.jar</src>
+                                    <type>file</type>
+                                    <mapper>
+                                        <type>perm</type>
+                                        <prefix>/usr/share/java/</prefix>
+                                    </mapper>
+                                </data>
+                                <data>
+                                    <src>bin/icarus</src>
+                                    <type>file</type>
+                                    <mapper>
+                                        <type>perm</type>
+                                        <prefix>/usr/local/bin/</prefix>
+                                    </mapper>
+                                </data>
+                            </dataSet>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>de.dentrassi.maven</groupId>
+                <artifactId>rpm</artifactId>
+                <version>${version.rpm}</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>rpm</goal>
+                        </goals>
+                        <configuration>
+                            <packageName>${project.artifactId}</packageName>
+                            <group>Applications/Databases</group>
+                            <packager>${maintainer}</packager>
+
+                            <skipSigning>true</skipSigning>
+
+                            <entries>
+                                <entry>
+                                    <name>/usr/share/java/${project.build.finalName}.jar</name>
+                                    <file>${outputDirectory}/${project.build.finalName}.jar</file>
+                                </entry>
+                                <entry>
+                                    <name>/usr/local/bin/icarus</name>
+                                    <file>${project.basedir}/bin/icarus</file>
+                                    <mode>0755</mode>
+                                </entry>
+                            </entries>
+                            <targetDir>${outputDirectory}</targetDir>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
