@@ -3,6 +3,8 @@
 image:https://img.shields.io/maven-central/v/com.instaclustr/icarus.svg?label=Maven%20Central[link=https://search.maven.org/search?q=g:%22com.instaclustr%22%20AND%20a:%22icarus%22]
 image:https://circleci.com/gh/instaclustr/instaclustr-icarus.svg?style=svg["Instaclustr",link="https://circleci.com/gh/instaclustr/instaclustr-icarus"]
 
+_Cloud-ready and Kubernetes enabled Sidecar for Apache Cassandra_
+
 This repository is home of a sidecar for Apache Cassandra database.
 Sidecar is meant to be run alongside of Cassandra instance
 and talks to Cassandra via JMX.
@@ -11,11 +13,14 @@ Sidecar JAR is also integrating https://github.com/instaclustr/instaclustr-esop[
 so it might be used in two modes - either as a long-running server application which responds to clients requests or as
 a CLI application via which one can backup / restore a Cassandra node.
 
+NOTE: Icarus is used in https://github.com/instaclustr/cassandra-operator[Instaclustr Kubernetes operator] as well as in
+https://github.com/Orange-OpenSource/casskop[CassKop] - Kubernetes operator for Cassandra from Orange where it is used for backup and restore of clusters.
+
 == Overview
 
 Icarus is a server-like application which acts as a gateway to a Cassandra node it is logically coupled with. In theory,
 Icarus process can run wherever but it needs to talk to a Cassandra node via JMX connection. If you do not want to expose
-JXM remotely, Icarus is connecting to `127.0.0.1:7199` by default. The other prerequisite for backup and restore operations
+JMX remotely, Icarus is connecting to `127.0.0.1:7199` by default. The other prerequisite for backup and restore operations
 is that Icarus has to be able to see the same directory structure as Cassandra does as it uploads / downloads SSTables and so on.
 
 If you have a cluster of, lets say, 5 nodes, there should be one Icarus server running alongside of each node.
@@ -33,7 +38,7 @@ Currently, the coordination / orchestration layer is done only for backup and re
 such behavior inherently. All other operations are as of now executed only against one particular sidecar and only that
 very Cassandra node it is configured to connect to is affected.
 
-For global operation cases, it is important to realise that there is not any main Icarus, all Icaruses are equal in their role
+NOTE: For global operation cases, it is important to realise that there is not any main Icarus, all Icaruses are equal in their role
 but only if a global request is sent to it during backup or restore, that one particular Icarus is promoted to be a coordinator
 of a cluster-wide backup and restore operation.
 
@@ -72,6 +77,9 @@ depends on this tool. Secondly, we do not need two separate JARs, this is partic
 when Icarus is used in our Kubernetes operator for Cassandra - for restoration purposes, it is
 invoked like CLI tool but for sidecar container, it is invoked like a server application which,
 accepting user's operation requests from operator.
+
+NOTE: Icarus reuses Esop - that means that the configuration paramters for CLI of Esop have same meaning as for Icarus.
+Instead of feeding these flags via CLI in case of Esop, we interact with Icarus via REST by sending a JSON body to operations endpoint.
 
 [source,bash]
 ----
@@ -119,9 +127,9 @@ The default address and port for REST is `127.0.0.1:4567`
 === Backup request submission
 
 Lets say we have keyspaces `test1` and `test2` with tables `testtable1`,`testtable2` and `testtable3` respectively
-which we want to make a backup of. In order to do that, we need to send a _backup operation_ to one of a sidecars.
+which we want to make a backup of. In order to do that, we need to send a _backup operation_ to one of sidecars.
 
-Lets say that we have three nodes, where hostname is `node1`,`node2` and `node3` respective and it resolves to IP.
+Lets say that we have three nodes, where hostname is `node1`,`node2` and `node3` respectively and it resolves to IP.
 
 You need to send the following JSON as body for `POST http://node1:4567/operations` with `application/json` `Content-Type` and `Accept` headers
 
@@ -284,7 +292,12 @@ This is the advantage of Icarus. In case of Esop, one would have to execute each
 will take care of that transparently so in order to do a cluster-wide backup and restore on a running cluster, one just needs to
 ever send one JSON to whatever node and say it is a global request.
 
-== Anatomy of Operation
+NOTE: During the backup and restore operations, your whole cluster was functioning without any disruption.
+It is even possible to backup and restore while your cluster is running, there is no downtime for both operations. Please
+consult https://github.com/instaclustr/instaclustr-esop[Esop] readme to know more about the nature of backups and restore
+and their configuration.
+
+== Anatomy of an Operation
 
 The interaction with Icarus via REST is conceptually driven around _operations_.
 
