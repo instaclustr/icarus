@@ -162,12 +162,14 @@ public class IcarusRestoreOperationCoordinator extends BaseRestoreOperationCoord
         try (final IcarusWrapper icarusWrapper = new IcarusWrapper(getSidecarClients())) {
             final IcarusWrapper oneClient = getOneClient(icarusWrapper);
 
+            final GlobalOperationProgressTracker progressTracker = new GlobalOperationProgressTracker(operation, numberOfOperations(icarusWrapper));
+
             final ResultSupplier[] resultSuppliers = new ResultSupplier[]{
-                    () -> executePhase(new InitPhasePreparation(), operation, oneClient),
-                    () -> executePhase(new DownloadPhasePreparation(), operation, icarusWrapper),
-                    () -> executePhase(new TruncatePhasePreparation(), operation, oneClient),
-                    () -> executePhase(new ImportingPhasePreparation(), operation, icarusWrapper),
-                    () -> executePhase(new CleaningPhasePreparation(), operation, icarusWrapper),
+                    () -> executePhase(new InitPhasePreparation(), operation, oneClient, progressTracker),
+                    () -> executePhase(new DownloadPhasePreparation(), operation, icarusWrapper, progressTracker),
+                    () -> executePhase(new TruncatePhasePreparation(), operation, oneClient, progressTracker),
+                    () -> executePhase(new ImportingPhasePreparation(), operation, icarusWrapper, progressTracker),
+                    () -> executePhase(new CleaningPhasePreparation(), operation, icarusWrapper, progressTracker),
             };
 
             for (final ResultSupplier supplier : resultSuppliers) {
@@ -177,9 +179,21 @@ public class IcarusRestoreOperationCoordinator extends BaseRestoreOperationCoord
                     break;
                 }
             }
+
+            // complete in every case
+            progressTracker.complete();
         } catch (final Exception ex) {
             operation.addError(Operation.Error.from(new OperationCoordinatorException("Unable to coordinate distributed restore.", ex)));
         }
+    }
+
+    private int numberOfOperations(final IcarusWrapper icarusWrapper) {
+        int operationsPerPhase = icarusWrapper.icarusClients.size();
+
+        // download, import and cleanup will be done on each node = num of clients * 3
+        // 1 node for init phase + 1 node for truncate phase = 2
+
+        return operationsPerPhase * 3 + 2;
     }
 
     public static class IcarusWrapper implements Closeable {
@@ -301,12 +315,12 @@ public class IcarusRestoreOperationCoordinator extends BaseRestoreOperationCoord
 
     private void executePhase(final PhasePreparation phasePreparation,
                               final Operation<RestoreOperationRequest> globalOperation,
-                              final IcarusWrapper icarusWrapper) throws OperationCoordinatorException {
+                              final IcarusWrapper icarusWrapper,
+                              final GlobalOperationProgressTracker progressTracker) throws OperationCoordinatorException {
         final ExecutorService executorService = executorServiceSupplier.get(MAX_NUMBER_OF_CONCURRENT_OPERATIONS);
 
         try {
             final List<RestoreOperationCallable> callables = new ArrayList<>();
-            final GlobalOperationProgressTracker progressTracker = new GlobalOperationProgressTracker(globalOperation, icarusWrapper.icarusClients.entrySet().size());
 
             // create
 

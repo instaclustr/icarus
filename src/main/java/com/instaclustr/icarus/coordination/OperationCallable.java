@@ -31,6 +31,16 @@ public abstract class OperationCallable<O extends Operation<T>, T extends Operat
     private final GlobalOperationProgressTracker progressTracker;
     private final String phase;
 
+    /**
+     * @param operation       operation to execute
+     * @param timeout         time to pass until an operation is in terminal state to not consider it to be failed
+     * @param icarusClient    client to execute this operation wit
+     * @param progressTracker progress tracker
+     * @param phase           phase to execute this operation against
+     *                        <p>
+     *                        In case a a progress tracker is shared among multiple phases, it is required that the number of operations for that tracker
+     *                        is equal to the sum of all partial operations in each phase. Each terminal state of an operation will update tracker by 1.0f.
+     */
     public OperationCallable(final Operation<T> operation,
                              final int timeout,
                              final IcarusClient icarusClient,
@@ -63,14 +73,14 @@ public abstract class OperationCallable<O extends Operation<T>, T extends Operat
                 if (operationResult.operation != null) {
                     operation = icarusClient.getOperation(operationResult.operation.id, operation.request);
 
+                    // even an operation returns here ok but its status if FAILED,
+                    // we do still have a progress of such operation updated to 100%
+                    // so we need to update the global progress tracked by remaining progress
+
                     float delta = operation.progress - floatAtomicReference.get();
-                    floatAtomicReference.set(floatAtomicReference.get() + delta);
+                    floatAtomicReference.accumulateAndGet(delta, Float::sum);
 
                     progressTracker.update(delta);
-
-                    if (FAILED == operation.state) {
-                        progressTracker.complete();
-                    }
 
                     return State.TERMINAL_STATES.contains(operation.state);
                 }
@@ -85,11 +95,15 @@ public abstract class OperationCallable<O extends Operation<T>, T extends Operat
                 // this is reached only in case the response itself can not be fetched
                 // if that response itself is returned but that remote operation failed,
                 // it would be treated in try block and returned from there
-                progressTracker.complete();
                 operation.state = FAILED;
                 operation.completionTime = Instant.now();
 
                 operation.addError(Operation.Error.from(icarusClient.getHost(), ex));
+
+                // consider this operation to be finished when it failed
+                // if an operation is finished on 80% and it fails, reference was
+                // never updated so we add the remaining progress subtracting it from 100% (1.0)
+                progressTracker.update(1.0f - floatAtomicReference.get());
 
                 return true;
             }

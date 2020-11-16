@@ -158,9 +158,10 @@ public class IcarusBackupOperationCoordinator extends BaseBackupOperationCoordin
                                           final ClusterTopology topology) {
         final ExecutorService executorService = executorServiceSupplier.get(MAX_NUMBER_OF_CONCURRENT_OPERATIONS);
 
+        final GlobalOperationProgressTracker progressTracker = new GlobalOperationProgressTracker(globalOperation, icarusClientMap.entrySet().size());
+
         try {
             final List<BackupOperationCallable> callables = new ArrayList<>();
-            final GlobalOperationProgressTracker progressTracker = new GlobalOperationProgressTracker(globalOperation, icarusClientMap.entrySet().size());
 
             // create
 
@@ -190,6 +191,7 @@ public class IcarusBackupOperationCoordinator extends BaseBackupOperationCoordin
             ex.printStackTrace();
             globalOperation.addError(Operation.Error.from(new OperationCoordinatorException("Unable to coordinate backup! " + ex.getMessage(), ex)));
         } finally {
+            progressTracker.complete();
             executorService.shutdownNow();
         }
     }
