@@ -1,3 +1,7 @@
+1.0.4
+
+- update of progress tracking in distributed restore
+
 1.0.3
 
 - update to Esop 1.0.3 with rewritten error reporting logic
