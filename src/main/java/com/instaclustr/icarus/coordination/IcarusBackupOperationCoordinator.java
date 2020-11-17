@@ -129,13 +129,17 @@ public class IcarusBackupOperationCoordinator extends BaseBackupOperationCoordin
         };
 
 
+        final GlobalOperationProgressTracker progressTracker = new GlobalOperationProgressTracker(operation, numberOfOperations(icarusClientMap));
+
         executeDistributedBackup(operation,
                                  icarusClientMap,
                                  backupRequestPreparation,
-                                 topology);
+                                 topology,
+                                 progressTracker);
 
         if (operation.hasErrors()) {
             logger.error("Backup operation failed and it is finishing prematurely ...");
+            progressTracker.complete();
             return;
         }
 
@@ -145,6 +149,13 @@ public class IcarusBackupOperationCoordinator extends BaseBackupOperationCoordin
         } catch (final Exception ex) {
             operation.addError(Operation.Error.from(new OperationCoordinatorException("Unable to upload topology file", ex)));
         }
+
+        progressTracker.complete();
+    }
+
+    private int numberOfOperations(final Map<InetAddress, IcarusClient> icarusWrapper) {
+        // backup requests to nodes + upload of topology
+        return icarusWrapper.size() + 1;
     }
 
     private interface BackupRequestPreparation {
@@ -155,10 +166,9 @@ public class IcarusBackupOperationCoordinator extends BaseBackupOperationCoordin
     private void executeDistributedBackup(final Operation<BackupOperationRequest> globalOperation,
                                           final Map<InetAddress, IcarusClient> icarusClientMap,
                                           final BackupRequestPreparation requestPreparation,
-                                          final ClusterTopology topology) {
+                                          final ClusterTopology topology,
+                                          final GlobalOperationProgressTracker progressTracker) {
         final ExecutorService executorService = executorServiceSupplier.get(MAX_NUMBER_OF_CONCURRENT_OPERATIONS);
-
-        final GlobalOperationProgressTracker progressTracker = new GlobalOperationProgressTracker(globalOperation, icarusClientMap.entrySet().size());
 
         try {
             final List<BackupOperationCallable> callables = new ArrayList<>();
@@ -191,7 +201,6 @@ public class IcarusBackupOperationCoordinator extends BaseBackupOperationCoordin
             ex.printStackTrace();
             globalOperation.addError(Operation.Error.from(new OperationCoordinatorException("Unable to coordinate backup! " + ex.getMessage(), ex)));
         } finally {
-            progressTracker.complete();
             executorService.shutdownNow();
         }
     }

@@ -30,6 +30,7 @@ public abstract class OperationCallable<O extends Operation<T>, T extends Operat
     protected final IcarusClient icarusClient;
     private final GlobalOperationProgressTracker progressTracker;
     private final String phase;
+    private final AtomicReference<Float> progress;
 
     /**
      * @param operation       operation to execute
@@ -51,9 +52,17 @@ public abstract class OperationCallable<O extends Operation<T>, T extends Operat
         this.progressTracker = progressTracker;
         this.phase = phase;
         this.timeout = timeout;
+        this.progress = new AtomicReference<>(0.0f);
+
     }
 
     public abstract OperationResult<O> sendOperation();
+
+    private float getProgressDelta(final Operation<T> operation) {
+        float delta = operation.progress - progress.get();
+        progress.accumulateAndGet(delta, Float::sum);
+        return delta;
+    }
 
     @Override
     public Operation<T> get() {
@@ -65,49 +74,49 @@ public abstract class OperationCallable<O extends Operation<T>, T extends Operat
 
         logger.info(format("Sent %s operation in phase %s to node %s", operation.type, phase, icarusClient.getHost()));
 
-        final AtomicReference<Float> floatAtomicReference = new AtomicReference<>((float) 0);
 
-        await().timeout(timeout, HOURS).pollInterval(5, SECONDS).until(() -> {
+        try {
+            await().timeout(timeout, HOURS).pollInterval(5, SECONDS).until(() -> {
 
-            try {
-                if (operationResult.operation != null) {
-                    operation = icarusClient.getOperation(operationResult.operation.id, operation.request);
+                try {
+                    if (operationResult.operation != null) {
+                        operation = icarusClient.getOperation(operationResult.operation.id, operation.request);
 
-                    // even an operation returns here ok but its status if FAILED,
-                    // we do still have a progress of such operation updated to 100%
-                    // so we need to update the global progress tracked by remaining progress
+                        // even an operation returns here ok but its status if FAILED,
+                        // we do still have a progress of such operation updated to 100%
+                        // so we need to update the global progress tracked by remaining progress
 
-                    float delta = operation.progress - floatAtomicReference.get();
-                    floatAtomicReference.accumulateAndGet(delta, Float::sum);
+                        progressTracker.update(getProgressDelta(operation));
 
-                    progressTracker.update(delta);
+                        return State.TERMINAL_STATES.contains(operation.state);
+                    }
 
-                    return State.TERMINAL_STATES.contains(operation.state);
+                    throw new OperationCoordinatorException(format("Error while fetching state of operation %s of type %s in phase %s against host %s, returned code: %s",
+                                                                   operation.id,
+                                                                   operation.request.type,
+                                                                   phase,
+                                                                   icarusClient.getHost(),
+                                                                   operationResult.response.getStatus()));
+                } catch (final Exception ex) {
+                    // this is reached only in case the response itself can not be fetched
+                    // if that response itself is returned but that remote operation failed,
+                    // it would be treated in try block and returned from there
+                    operation.state = FAILED;
+                    operation.completionTime = Instant.now();
+
+                    operation.addError(Operation.Error.from(icarusClient.getHost(), ex));
+
+                    // consider this operation to be finished when it failed
+                    // if an operation is finished on 80% and it fails, reference was
+                    // never updated so we add the remaining progress subtracting it from 100% (1.0)
+                    progressTracker.update(1.0f - progress.get());
+
+                    return true;
                 }
-
-                throw new OperationCoordinatorException(format("Error while fetching state of operation %s of type %s in phase %s against host %s, returned code: %s",
-                                                               operation.id,
-                                                               operation.request.type,
-                                                               phase,
-                                                               icarusClient.getHost(),
-                                                               operationResult.response.getStatus()));
-            } catch (final Exception ex) {
-                // this is reached only in case the response itself can not be fetched
-                // if that response itself is returned but that remote operation failed,
-                // it would be treated in try block and returned from there
-                operation.state = FAILED;
-                operation.completionTime = Instant.now();
-
-                operation.addError(Operation.Error.from(icarusClient.getHost(), ex));
-
-                // consider this operation to be finished when it failed
-                // if an operation is finished on 80% and it fails, reference was
-                // never updated so we add the remaining progress subtracting it from 100% (1.0)
-                progressTracker.update(1.0f - floatAtomicReference.get());
-
-                return true;
-            }
-        });
+            });
+        } catch(final Exception ex) {
+            progressTracker.update(1.0f - progress.get());
+        }
 
         final String logMessage = format("operation %s against node %s with hostId %s has finished with state %s.",
                                          operation.id,
