@@ -82,7 +82,7 @@ public class IcarusBackupOperationCoordinator extends BaseBackupOperationCoordin
         try {
             topology = new CassandraClusterTopology(cassandraJMXService, operation.request.dc).act();
         } catch (final Exception ex) {
-            operation.addError(Operation.Error.from(ex, "Unable to get cluster topology."));
+            operation.addError(Operation.Error.from(ex, "Unable to get cluster topology, have you specified your credentials and connection details to jmx properly?"));
             return;
         }
 
