@@ -1,7 +1,7 @@
 = Instaclustr Icarus
 
 image:https://img.shields.io/maven-central/v/com.instaclustr/icarus.svg?label=Maven%20Central[link=https://search.maven.org/search?q=g:%22com.instaclustr%22%20AND%20a:%22icarus%22]
-image:https://circleci.com/gh/instaclustr/instaclustr-icarus.svg?style=svg["Instaclustr",link="https://circleci.com/gh/instaclustr/instaclustr-icarus"]
+image:https://circleci.com/gh/instaclustr/icarus.svg?style=svg["Instaclustr",link="https://circleci.com/gh/instaclustr/icarus"]
 
 _Cloud-ready and Kubernetes-enabled Sidecar for Apache Cassandra_
 
