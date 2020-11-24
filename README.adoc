@@ -15,7 +15,7 @@ This repository is home of a sidecar for Apache Cassandra database.
 Sidecar is meant to be run alongside of Cassandra instance
 and talks to Cassandra via JMX.
 
-Sidecar JAR is also integrating https://github.com/instaclustr/instaclustr-esop[Esop] for backup and restore seamlessly
+Sidecar JAR is also integrating https://github.com/instaclustr/esop[Esop] for backup and restore seamlessly
 so it might be used in two modes—either as a long-running server application which responds to clients requests, or as
 a CLI application via which one can backup/restore a Cassandra node.
 
@@ -300,7 +300,7 @@ ever send one JSON to whichever node and say it is a global request.
 
 NOTE: During the backup and restore operations, your whole cluster functions without any disruption.
 It is even possible to backup and restore while your cluster is running, there is no downtime for both operations. Please
-consult https://github.com/instaclustr/instaclustr-esop[Esop] readme to learn more about the nature of backups and restore
+consult https://github.com/instaclustr/esop[Esop] readme to learn more about the nature of backups and restore
 and their configuration.
 
 == Anatomy of an Operation
