@@ -16,6 +16,8 @@ import com.instaclustr.esop.impl._import.ImportModule;
 import com.instaclustr.esop.impl.backup.BackupModules;
 import com.instaclustr.esop.impl.backup.BackupModules.BackupModule;
 import com.instaclustr.esop.impl.backup.BackupModules.CommitlogBackupModule;
+import com.instaclustr.esop.impl.hash.HashModule;
+import com.instaclustr.esop.impl.hash.HashSpec;
 import com.instaclustr.esop.impl.restore.RestoreModules;
 import com.instaclustr.esop.impl.restore.RestoreModules.RestorationStrategyModule;
 import com.instaclustr.esop.impl.restore.RestoreModules.RestoreCommitlogModule;
@@ -65,6 +67,9 @@ public final class Icarus extends CLIApplication implements Callable<Void> {
     @Mixin
     public CassandraJMXSpec jmxSpec;
 
+    @Mixin
+    public HashSpec hashSpec;
+
     @Spec
     private CommandSpec commandSpec;
 
@@ -94,7 +99,7 @@ public final class Icarus extends CLIApplication implements Callable<Void> {
         logCommandVersionInformation(commandSpec);
 
         // production binds singletons as eager by default
-        final Injector injector = createInjector(PRODUCTION, getModules(icarusSpec, jmxSpec, enableTruncateOperation));
+        final Injector injector = createInjector(PRODUCTION, getModules(icarusSpec, jmxSpec, hashSpec, enableTruncateOperation));
 
         return injector.getInstance(Application.class).call();
     }
@@ -104,12 +109,13 @@ public final class Icarus extends CLIApplication implements Callable<Void> {
         return "instaclustr-icarus";
     }
 
-    public List<AbstractModule> getModules(SidecarSpec icarusSpec,
-                                           CassandraJMXSpec jmxSpec,
+    public List<AbstractModule> getModules(final SidecarSpec icarusSpec,
+                                           final CassandraJMXSpec jmxSpec,
+                                           final HashSpec hashSpec,
                                            final boolean enableTruncateOperation) throws Exception {
         List<AbstractModule> modules = new ArrayList<>();
 
-        modules.addAll(backupRestoreModules());
+        modules.addAll(backupRestoreModules(hashSpec));
         modules.addAll(operationModules());
         modules.addAll(icarusModules(icarusSpec, jmxSpec));
 
@@ -154,7 +160,7 @@ public final class Icarus extends CLIApplication implements Callable<Void> {
         }};
     }
 
-    public static List<AbstractModule> backupRestoreModules() {
+    public static List<AbstractModule> backupRestoreModules(final HashSpec hashSpec) {
         return new ArrayList<AbstractModule>() {{
             add(new StorageModules());
             add(new BackupModule());
@@ -164,6 +170,7 @@ public final class Icarus extends CLIApplication implements Callable<Void> {
             add(new RestorationStrategyModule());
             add(new BackupModules.UploadingModule());
             add(new RestoreModules.DownloadingModule());
+            add(new HashModule(hashSpec));
         }};
     }
 

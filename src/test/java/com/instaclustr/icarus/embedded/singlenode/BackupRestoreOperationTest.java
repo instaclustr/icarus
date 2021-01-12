@@ -49,7 +49,8 @@ public class BackupRestoreOperationTest extends AbstractCassandraIcarusTest {
                     false, // skip bucket verification
                     null, // schemaVersion,
                     false, // upload topology
-                    null // proxy
+                    null, // proxy
+                    null // retry
             );
 
             final OperationResult<BackupOperation> result = icarusHolder.icarusClient.backup(backupOperationRequest);
@@ -105,7 +106,10 @@ public class BackupRestoreOperationTest extends AbstractCassandraIcarusTest {
                     false, // insecure
                     false, // newCluster
                     false, // skipBucketVerification
-                    null // proxy
+                    null, // proxy
+                    null, // rename
+                    null, // retry
+                    false // single
             );
 
             icarusHolder.icarusClient.waitForCompleted(icarusHolder.icarusClient.restore(restoreOperationRequest));

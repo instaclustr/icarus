@@ -1,6 +1,6 @@
 package com.instaclustr.icarus.embedded.singlenode;
 
-import static com.instaclustr.esop.impl.restore.RestorationPhase.RestorationPhaseType.DOWNLOAD;
+import static com.instaclustr.esop.impl.restore.RestorationPhase.RestorationPhaseType.INIT;
 import static com.instaclustr.esop.impl.restore.RestorationStrategy.RestorationStrategyType.HARDLINKS;
 import static com.instaclustr.io.FileUtils.deleteDirectory;
 
@@ -15,9 +15,9 @@ import com.instaclustr.esop.impl.backup.BackupOperation;
 import com.instaclustr.esop.impl.backup.BackupOperationRequest;
 import com.instaclustr.esop.impl.restore.RestoreOperationRequest;
 import com.instaclustr.esop.impl.truncate.TruncateOperationRequest;
+import com.instaclustr.icarus.embedded.AbstractCassandraIcarusTest;
 import com.instaclustr.icarus.rest.IcarusClient;
 import com.instaclustr.measure.DataRate;
-import com.instaclustr.icarus.embedded.AbstractCassandraIcarusTest;
 import org.testng.annotations.Test;
 
 /**
@@ -47,7 +47,8 @@ public class SingleNodeDistributedBackupRestoreTest extends AbstractCassandraIca
                 false, // skip bucket verification
                 null, // schema version
                 false, // topology file, even it is false, global request does not care, it will upload it anyway
-                null // proxy
+                null, // proxy
+                null // retry
         );
     }
 
@@ -64,7 +65,7 @@ public class SingleNodeDistributedBackupRestoreTest extends AbstractCassandraIca
                 DatabaseEntities.parse(keyspaceName), // entities
                 false, // update cassandra yaml
                 HARDLINKS, // restoration strategy
-                DOWNLOAD, // restoration phase
+                INIT, // restoration phase
                 new ImportOperationRequest(null, null, downloadDir), // import
                 false, // noDeleteTruncates
                 false, // noDeleteDownload
@@ -79,7 +80,10 @@ public class SingleNodeDistributedBackupRestoreTest extends AbstractCassandraIca
                 false, // insecure
                 false, // newCluster
                 false, // skip bucket verification
-                null // proxy
+                null, // proxy
+                null, // rename
+                null,
+                false
         );
     }
 

@@ -19,6 +19,7 @@ import com.google.inject.Inject;
 import com.instaclustr.cassandra.CassandraVersion;
 import com.instaclustr.esop.guice.BackuperFactory;
 import com.instaclustr.esop.guice.BucketServiceFactory;
+import com.instaclustr.esop.impl.CassandraData;
 import com.instaclustr.esop.impl.KeyspaceTable;
 import com.instaclustr.esop.impl.StorageLocation;
 import com.instaclustr.esop.impl.backup.BackupOperation;
@@ -26,6 +27,7 @@ import com.instaclustr.esop.impl.backup.BackupOperationRequest;
 import com.instaclustr.esop.impl.backup.Backuper;
 import com.instaclustr.esop.impl.backup.UploadTracker;
 import com.instaclustr.esop.impl.backup.coordination.BaseBackupOperationCoordinator;
+import com.instaclustr.esop.impl.hash.HashSpec;
 import com.instaclustr.esop.topology.CassandraClusterTopology;
 import com.instaclustr.esop.topology.CassandraClusterTopology.ClusterTopology;
 import com.instaclustr.icarus.rest.IcarusClient;
@@ -55,8 +57,9 @@ public class IcarusBackupOperationCoordinator extends BaseBackupOperationCoordin
                                             final SidecarSpec icarusSpec,
                                             final ExecutorServiceSupplier executorServiceSupplier,
                                             final ObjectMapper objectMapper,
-                                            final UploadTracker uploadTracker) {
-        super(cassandraJMXService, cassandraVersionProvider, backuperFactoryMap, bucketServiceFactoryMap, objectMapper, uploadTracker);
+                                            final UploadTracker uploadTracker,
+                                            final HashSpec hashSpec) {
+        super(cassandraJMXService, cassandraVersionProvider, backuperFactoryMap, bucketServiceFactoryMap, objectMapper, uploadTracker, hashSpec);
         this.icarusSpec = icarusSpec;
         this.executorServiceSupplier = executorServiceSupplier;
     }
@@ -70,7 +73,8 @@ public class IcarusBackupOperationCoordinator extends BaseBackupOperationCoordin
         }
 
         try {
-            KeyspaceTable.checkEntitiesToProcess(operation.request.cassandraDirectory.resolve("data"), operation.request.entities);
+            CassandraData data = CassandraData.parse(operation.request.cassandraDirectory.resolve("data"));
+            data.setDatabaseEntitiesFromRequest(operation.request.entities);
         } catch (final Exception ex) {
             logger.error(ex.getMessage());
             operation.addError(Operation.Error.from(ex));

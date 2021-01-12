@@ -29,6 +29,7 @@ import com.google.inject.Inject;
 import com.instaclustr.esop.guice.BucketServiceFactory;
 import com.instaclustr.esop.guice.RestorerFactory;
 import com.instaclustr.esop.impl.BucketService;
+import com.instaclustr.esop.impl.CassandraData;
 import com.instaclustr.esop.impl.StorageLocation;
 import com.instaclustr.esop.impl.restore.RestorationPhase.RestorationPhaseType;
 import com.instaclustr.esop.impl.restore.RestorationStrategyResolver;
@@ -89,8 +90,8 @@ public class IcarusRestoreOperationCoordinator extends BaseRestoreOperationCoord
 
         /*
          * I receive a request
-         *  If it is a global request, I will be coordinator
-         *  otherwise just execute that request
+         * If it is a global request, I will be coordinator
+         * otherwise just execute that request
          */
 
         // if it is not global request, there might be at most one global request running
@@ -155,22 +156,39 @@ public class IcarusRestoreOperationCoordinator extends BaseRestoreOperationCoord
             throw new IllegalStateException("ID of a running operation does not equal to ID of this restore operation!");
         }
 
-        if (operation.request.restorationPhase != DOWNLOAD) {
-            throw new IllegalStateException(format("Restoration coordination has to start with %s phase.", DOWNLOAD));
+        if (!operation.request.singlePhase && operation.request.restorationPhase != INIT) {
+            throw new IllegalStateException("If global request is true and singlePhase is false, restorationPhase has to be INIT");
+        }
+
+        try {
+            CassandraData data = CassandraData.parse(operation.request.cassandraDirectory.resolve("data"));
+            data.setDatabaseEntitiesFromRequest(operation.request.entities);
+            data.setRenamedEntitiesFromRequest(operation.request.rename);
+        } catch (final Exception ex) {
+            throw new IllegalStateException(ex.getMessage());
         }
 
         try (final IcarusWrapper icarusWrapper = new IcarusWrapper(getSidecarClients())) {
             final IcarusWrapper oneClient = getOneClient(icarusWrapper);
 
-            final GlobalOperationProgressTracker progressTracker = new GlobalOperationProgressTracker(operation, numberOfOperations(icarusWrapper));
+            final GlobalOperationProgressTracker progressTracker = new GlobalOperationProgressTracker(operation,
+                                                                                                      numberOfOperations(icarusWrapper, operation.request.singlePhase));
 
-            final ResultSupplier[] resultSuppliers = new ResultSupplier[]{
-                    () -> executePhase(new InitPhasePreparation(), operation, oneClient, progressTracker),
-                    () -> executePhase(new DownloadPhasePreparation(), operation, icarusWrapper, progressTracker),
-                    () -> executePhase(new TruncatePhasePreparation(), operation, oneClient, progressTracker),
-                    () -> executePhase(new ImportingPhasePreparation(), operation, icarusWrapper, progressTracker),
-                    () -> executePhase(new CleaningPhasePreparation(), operation, icarusWrapper, progressTracker),
-            };
+            ResultSupplier[] resultSuppliers;
+
+            if (operation.request.singlePhase) {
+                resultSuppliers = new ResultSupplier[]{
+                        () -> executePhase(getPhase(operation.request.restorationPhase), operation, icarusWrapper, progressTracker)
+                };
+            } else {
+                resultSuppliers = new ResultSupplier[]{
+                        () -> executePhase(new InitPhasePreparation(), operation, icarusWrapper, progressTracker),
+                        () -> executePhase(new DownloadPhasePreparation(), operation, icarusWrapper, progressTracker),
+                        () -> executePhase(new TruncatePhasePreparation(), operation, oneClient, progressTracker),
+                        () -> executePhase(new ImportingPhasePreparation(), operation, icarusWrapper, progressTracker),
+                        () -> executePhase(new CleaningPhasePreparation(), operation, icarusWrapper, progressTracker),
+                };
+            }
 
             for (final ResultSupplier supplier : resultSuppliers) {
                 supplier.getWithEx();
@@ -187,13 +205,13 @@ public class IcarusRestoreOperationCoordinator extends BaseRestoreOperationCoord
         }
     }
 
-    private int numberOfOperations(final IcarusWrapper icarusWrapper) {
-        int operationsPerPhase = icarusWrapper.icarusClients.size();
-
-        // download, import and cleanup will be done on each node = num of clients * 3
-        // 1 node for init phase + 1 node for truncate phase = 2
-
-        return operationsPerPhase * 3 + 2;
+    private int numberOfOperations(final IcarusWrapper icarusWrapper, final boolean singlePhase) {
+        final int numberOfClients = icarusWrapper.icarusClients.size();
+        if (singlePhase) {
+            return numberOfClients;
+        }
+        // init, download, import and cleanup will be done on each node = num of clients * 4 + 1 node for truncate phase
+        return numberOfClients * 4 + 1;
     }
 
     public static class IcarusWrapper implements Closeable {
@@ -270,6 +288,23 @@ public class IcarusRestoreOperationCoordinator extends BaseRestoreOperationCoord
             request.storageLocation = StorageLocation.update(request.storageLocation, client.getClusterName(), client.getDc(), client.getHostId().get().toString());
             request.storageLocation.globalRequest = false;
             request.globalRequest = false;
+        }
+    }
+
+    public static PhasePreparation getPhase(final RestorationPhaseType phaseType) {
+        switch (phaseType) {
+            case DOWNLOAD:
+                return new DownloadPhasePreparation();
+            case TRUNCATE:
+                return new TruncatePhasePreparation();
+            case IMPORT:
+                return new ImportingPhasePreparation();
+            case CLEANUP:
+                return new CleaningPhasePreparation();
+            case INIT:
+                return new InitPhasePreparation();
+            default:
+                throw new IllegalStateException("Unable to resolve phase preparation from " + phaseType);
         }
     }
 

@@ -1,5 +1,6 @@
 package com.instaclustr.icarus.embedded.singlenode;
 
+import static com.instaclustr.esop.impl.restore.RestorationPhase.RestorationPhaseType.INIT;
 import static com.instaclustr.esop.impl.restore.RestorationStrategy.RestorationStrategyType.IN_PLACE;
 import static com.instaclustr.io.FileUtils.createDirectory;
 import static com.instaclustr.io.FileUtils.deleteDirectory;
@@ -11,7 +12,9 @@ import java.util.UUID;
 
 import com.instaclustr.esop.impl.StorageLocation;
 import com.instaclustr.esop.impl.backup.BackupOperationRequest;
+import com.instaclustr.esop.impl.restore.RestorationPhase;
 import com.instaclustr.esop.impl.restore.RestoreOperationRequest;
+import com.instaclustr.esop.impl.retry.RetrySpec;
 import com.instaclustr.esop.topology.CassandraClusterTopology;
 import com.instaclustr.esop.topology.CassandraClusterTopology.ClusterTopology;
 import com.instaclustr.icarus.embedded.AbstractCassandraIcarusTest;
@@ -85,7 +88,8 @@ public abstract class AbstractSingleNodeBackupFromScratchRestoreTest extends Abs
                 false, // skip bucket verification
                 null, // schema version
                 false, // topology file, even it is false, global request does not care, it will upload it anyway
-                null // proxy settings
+                null, // proxy settings
+                new RetrySpec(10, RetrySpec.RetryStrategy.EXPONENTIAL, 3, true) // retry
         );
     }
 
@@ -132,7 +136,10 @@ public abstract class AbstractSingleNodeBackupFromScratchRestoreTest extends Abs
                 false, // insecure
                 false, // new cluster
                 false, // skip bucket verification
-                null // proxy settings
+                null, // proxy settings
+                null, // rename
+                new RetrySpec(10, RetrySpec.RetryStrategy.EXPONENTIAL, 3, true), // retry
+                false
         );
     }
 

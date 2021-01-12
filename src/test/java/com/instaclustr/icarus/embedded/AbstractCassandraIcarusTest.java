@@ -24,6 +24,7 @@ import com.google.common.util.concurrent.ServiceManager;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.instaclustr.esop.impl.hash.HashSpec;
 import com.instaclustr.icarus.Icarus;
 import com.instaclustr.icarus.rest.IcarusClient;
 import com.instaclustr.io.FileUtils;
@@ -192,7 +193,9 @@ public abstract class AbstractCassandraIcarusTest {
         icarusSpec.httpServerAddress = new HttpServerInetSocketAddressTypeConverter().convert(httpAdddress + ":" + httpPort.toString());
         icarusSpec.operationsExpirationPeriod = new Time(1L, HOURS);
 
-        List<AbstractModule> modules = new Icarus().getModules(icarusSpec, cassandraJMXSpec, true);
+        HashSpec hashSpec = new HashSpec();
+
+        List<AbstractModule> modules = new Icarus().getModules(icarusSpec, cassandraJMXSpec, hashSpec, true);
 
         Injector injector = Guice.createInjector(modules);
 
