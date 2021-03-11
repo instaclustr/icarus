@@ -19,6 +19,7 @@ import com.google.inject.Inject;
 import com.instaclustr.cassandra.CassandraVersion;
 import com.instaclustr.esop.guice.BackuperFactory;
 import com.instaclustr.esop.guice.BucketServiceFactory;
+import com.instaclustr.esop.impl.BucketService;
 import com.instaclustr.esop.impl.CassandraData;
 import com.instaclustr.esop.impl.KeyspaceTable;
 import com.instaclustr.esop.impl.StorageLocation;
@@ -116,6 +117,8 @@ public class IcarusBackupOperationCoordinator extends BaseBackupOperationCoordin
                 final BackupOperationRequest clonedRequest = (BackupOperationRequest) globalRequest.clone();
                 final BackupOperation backupOperation = new BackupOperation(clonedRequest);
                 backupOperation.request.globalRequest = false;
+                // skipping bucket verification as it will be created / checked just once on coordinator before individual requests are dispersed to each Icarus
+                backupOperation.request.skipBucketVerification = true;
                 // if this is a global request, we upload cluster topology just once, from coordinator
                 backupOperation.request.uploadClusterTopology = false;
 
@@ -132,6 +135,16 @@ public class IcarusBackupOperationCoordinator extends BaseBackupOperationCoordin
             }
         };
 
+        try {
+            if (!operation.request.skipBucketVerification) {
+                try (final BucketService bucketService = bucketServiceFactoryMap.get(operation.request.storageLocation.storageProvider).createBucketService(operation.request)) {
+                    bucketService.checkBucket(operation.request.storageLocation.bucket, operation.request.createMissingBucket);
+                }
+            }
+        } catch (final Exception ex) {
+            operation.addError(Operation.Error.from(ex, "Unable to check if a bucket exists or it can not be created!"));
+            return;
+        }
 
         final GlobalOperationProgressTracker progressTracker = new GlobalOperationProgressTracker(operation, numberOfOperations(icarusClientMap));
 
