@@ -21,7 +21,7 @@ public class CoordinationUtils {
                                                                    final SidecarSpec icarusSpec,
                                                                    final ObjectMapper objectMapper) {
 
-        final Set<InetAddress> difference = Sets.difference(endpointDcs.keySet(), endpointDcs.keySet());
+        final Set<InetAddress> difference = Sets.difference(endpoints.keySet(), endpointDcs.keySet());
 
         if (!difference.isEmpty()) {
             throw new IllegalStateException(format("Map of endpoints to their host ids is not equal on keys with a map of endpoints to their DC: %s, second map: %s",
