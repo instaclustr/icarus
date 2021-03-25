@@ -113,7 +113,6 @@ public abstract class AbstractSingleNodeBackupFromScratchRestoreTest extends Abs
                 "restore", // type
                 location,
                 null, // concurrent connections
-                null, // lock file
                 cassandraDir.resolve("data"), // cassandra dir
                 cassandraDir.resolve("config"), // cassandra config dir
                 true, // restore system keyspace
@@ -131,6 +130,7 @@ public abstract class AbstractSingleNodeBackupFromScratchRestoreTest extends Abs
                 null, // k8s namespace
                 null, // k8s secret name
                 false, // !!! GLOBAL REQUEST !!!
+                null, // dc
                 null, // timeout,
                 true, // resolve topology
                 false, // insecure

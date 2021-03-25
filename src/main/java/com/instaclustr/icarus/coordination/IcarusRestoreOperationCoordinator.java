@@ -168,7 +168,7 @@ public class IcarusRestoreOperationCoordinator extends BaseRestoreOperationCoord
             throw new IllegalStateException(ex.getMessage());
         }
 
-        try (final IcarusWrapper icarusWrapper = new IcarusWrapper(getSidecarClients())) {
+        try (final IcarusWrapper icarusWrapper = new IcarusWrapper(getSidecarClients(operation.request.dc))) {
             final IcarusWrapper oneClient = getOneClient(icarusWrapper);
 
             final GlobalOperationProgressTracker progressTracker = new GlobalOperationProgressTracker(operation,
@@ -343,9 +343,9 @@ public class IcarusRestoreOperationCoordinator extends BaseRestoreOperationCoord
         }
     }
 
-    private Map<InetAddress, IcarusClient> getSidecarClients() throws Exception {
-        final ClusterTopology clusterTopology = new CassandraClusterTopology(cassandraJMXService, null).act();
-        return constructSidecars(clusterTopology.clusterName, clusterTopology.endpoints, clusterTopology.endpointDcs, icarusSpec, objectMapper);
+    private Map<InetAddress, IcarusClient> getSidecarClients(final String dc) throws Exception {
+        final ClusterTopology clusterTopology = new CassandraClusterTopology(cassandraJMXService, dc).act();
+        return constructSidecars(clusterTopology, icarusSpec, objectMapper);
     }
 
     private void executePhase(final PhasePreparation phasePreparation,

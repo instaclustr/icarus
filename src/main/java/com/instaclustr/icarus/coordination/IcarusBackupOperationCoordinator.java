@@ -82,6 +82,8 @@ public class IcarusBackupOperationCoordinator extends BaseBackupOperationCoordin
             return;
         }
 
+        logger.info("Resolved datacenter: {}", operation.request.dc == null ? "all of them" : operation.request.dc);
+
         ClusterTopology topology;
 
         try {
@@ -91,13 +93,7 @@ public class IcarusBackupOperationCoordinator extends BaseBackupOperationCoordin
             return;
         }
 
-        logger.info("Resolved datacenter: {}", operation.request.dc == null ? "all of them" : operation.request.dc);
-
-        final Map<InetAddress, IcarusClient> icarusClientMap = constructSidecars(topology.clusterName,
-                                                                                 topology.endpoints,
-                                                                                 topology.endpointDcs,
-                                                                                 icarusSpec,
-                                                                                 objectMapper);
+        final Map<InetAddress, IcarusClient> icarusClientMap = constructSidecars(topology, icarusSpec, objectMapper);
 
         logger.info("Executing backup requests against {}", icarusClientMap.toString());
 

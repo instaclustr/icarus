@@ -83,7 +83,6 @@ public class BackupRestoreOperationTest extends AbstractCassandraIcarusTest {
                     "restore", // type
                     new StorageLocation("file://" + target("backup1") + "/cluster/test-dc/1"), // storage location
                     null, // concurrent connections
-                    null, // lock file
                     cassandraDir.resolve("data"), // cassandra dir
                     cassandraDir.resolve("config"), // cassandra config dir
                     false, // restore system keyspace
@@ -101,6 +100,7 @@ public class BackupRestoreOperationTest extends AbstractCassandraIcarusTest {
                     null, // k8s namespace
                     null, // k8s secret name
                     false, // NO GLOBAL REQUEST
+                    null, // dc
                     null, // timeout
                     false, // resolveHostIdFromTopology
                     false, // insecure

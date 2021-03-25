@@ -57,7 +57,6 @@ public class SingleNodeDistributedBackupRestoreTest extends AbstractCassandraIca
                 "restore", // type
                 new StorageLocation("file://" + target("backup1") + "/cluster/test-dc/global"), // storage location
                 null, // concurrent connections
-                null, // lock file
                 cassandraDir.resolve("data"), // cassandra dir
                 cassandraDir.resolve("config"), // cassandra config dir
                 false, // restore system keyspace
@@ -75,6 +74,7 @@ public class SingleNodeDistributedBackupRestoreTest extends AbstractCassandraIca
                 null, // k8s namespace
                 null, // k8s secret name
                 true, // !!! GLOBAL REQUEST !!!
+                null, // dc
                 null, // timeout,
                 false, // resolve topology
                 false, // insecure

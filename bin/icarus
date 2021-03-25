@@ -7,4 +7,8 @@ else
     JAVA="`which java`"
 fi
 
-"$JAVA" -jar "/usr/share/java/icarus.jar" $@
+if [ -f /etc/logback-icarus.xml ]; then
+  "$JAVA" -Dlogback.configurationFile=/etc/logback-icarus.xml -jar "/usr/share/java/icarus.jar" $@
+else
+  "$JAVA" -jar "/usr/share/java/icarus.jar" $@
+fi

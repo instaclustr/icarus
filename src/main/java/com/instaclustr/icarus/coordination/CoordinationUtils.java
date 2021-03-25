@@ -10,16 +10,19 @@ import java.util.UUID;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
+import com.instaclustr.esop.topology.CassandraClusterTopology.ClusterTopology;
 import com.instaclustr.icarus.rest.IcarusClient;
 import com.instaclustr.sidecar.picocli.SidecarSpec;
 
 public class CoordinationUtils {
 
-    public static Map<InetAddress, IcarusClient> constructSidecars(final String clusterName,
-                                                                   final Map<InetAddress, UUID> endpoints,
-                                                                   final Map<InetAddress, String> endpointDcs,
+    public static Map<InetAddress, IcarusClient> constructSidecars(final ClusterTopology topology,
                                                                    final SidecarSpec icarusSpec,
                                                                    final ObjectMapper objectMapper) {
+
+        final String clusterName = topology.clusterName;
+        final Map<InetAddress, UUID> endpoints = topology.endpoints;
+        final Map<InetAddress, String> endpointDcs = topology.endpointDcs;
 
         final Set<InetAddress> difference = Sets.difference(endpoints.keySet(), endpointDcs.keySet());
 
