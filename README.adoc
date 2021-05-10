@@ -68,6 +68,8 @@ try to send anything back to client on its own. We can only query it.
 $ mvn clean install
 ----
 
+If you want to build rpm or deb package, you need to enable `rpm` and/or `deb` Maven profile.
+
 There are built RPM and DEB packages for each GitHub release as well as Icarus JAR.
 We are publishing each release to Maven central.
 
