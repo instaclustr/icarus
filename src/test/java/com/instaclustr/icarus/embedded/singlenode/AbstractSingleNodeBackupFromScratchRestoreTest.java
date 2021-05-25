@@ -89,7 +89,8 @@ public abstract class AbstractSingleNodeBackupFromScratchRestoreTest extends Abs
                 null, // schema version
                 false, // topology file, even it is false, global request does not care, it will upload it anyway
                 null, // proxy settings
-                new RetrySpec(10, RetrySpec.RetryStrategy.EXPONENTIAL, 3, true) // retry
+                new RetrySpec(10, RetrySpec.RetryStrategy.EXPONENTIAL, 3, true), // retry
+                false // skip refreshing
         );
     }
 

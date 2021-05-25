@@ -50,7 +50,8 @@ public class BackupRestoreOperationTest extends AbstractCassandraIcarusTest {
                     null, // schemaVersion,
                     false, // upload topology
                     null, // proxy
-                    null // retry
+                    null, // retry
+                    false // skip refreshing
             );
 
             final OperationResult<BackupOperation> result = icarusHolder.icarusClient.backup(backupOperationRequest);

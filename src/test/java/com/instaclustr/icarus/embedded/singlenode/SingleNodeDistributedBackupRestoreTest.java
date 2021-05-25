@@ -48,7 +48,8 @@ public class SingleNodeDistributedBackupRestoreTest extends AbstractCassandraIca
                 null, // schema version
                 false, // topology file, even it is false, global request does not care, it will upload it anyway
                 null, // proxy
-                null // retry
+                null, // retry
+                false // skip refreshing
         );
     }
 
