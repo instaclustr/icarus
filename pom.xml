@@ -18,7 +18,7 @@
         <testng.version>6.14.3</testng.version>
         <mockito.version>2.23.4</mockito.version>
         <awaitility.version>3.1.6</awaitility.version>
-        <cassandra.driver.version>4.6.0</cassandra.driver.version>
+        <cassandra.driver.version>4.11.1</cassandra.driver.version>
         <version.embedded.cassandra>3.0.2</version.embedded.cassandra>
 
         <maven.gpg.plugin.version>1.6</maven.gpg.plugin.version>
@@ -376,6 +376,25 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+        <profile>
+            <id>snapshotRepo</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <repositories>
+                <repository>
+                    <id>apache.snapshots</id>
+                    <name>Apache Development Snapshot Repository</name>
+                    <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+                    <releases>
+                        <enabled>false</enabled>
+                    </releases>
+                    <snapshots>
+                        <enabled>true</enabled>
+                    </snapshots>
+                </repository>
+            </repositories>
         </profile>
     </profiles>
 
