@@ -5,21 +5,23 @@ import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.insertInto;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.literal;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.selectFrom;
 
+import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
-import com.github.nosan.embedded.cassandra.api.Cassandra;
-import com.github.nosan.embedded.cassandra.api.connection.CqlSessionCassandraConnectionFactory;
+import com.github.nosan.embedded.cassandra.Cassandra;
+import com.instaclustr.icarus.embedded.AbstractCassandraIcarusTest.IcarusHolder;
 import com.instaclustr.icarus.operations.flush.FlushOperationRequest;
 import com.instaclustr.icarus.rest.IcarusClient;
-import com.instaclustr.icarus.embedded.AbstractCassandraIcarusTest.IcarusHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
@@ -48,17 +50,13 @@ public class DatabaseHelper {
     }
 
     public void createKeyspace(String keyspace, Map<String, Integer> networkTopologyMap) {
-        try (CqlSession session = new CqlSessionCassandraConnectionFactory().create(currentNode).getConnection()) {
-            session.execute(SchemaBuilder.createKeyspace(keyspace).ifNotExists().withNetworkTopologyStrategy(networkTopologyMap).build());
-        }
+        withSession(session -> session.execute(SchemaBuilder.createKeyspace(keyspace).ifNotExists().withNetworkTopologyStrategy(networkTopologyMap).build()));
     }
 
     public void createKeyspace(String keyspace) {
-        Map<String, Integer> topologyMap = new HashMap<String, Integer>() {{
+        createKeyspace(keyspace, new HashMap<String, Integer>() {{
             put(defaultDC, 1);
-        }};
-
-        createKeyspace(keyspace, topologyMap);
+        }});
     }
 
     public void createKeyspaceAndTable(String keyspace, String table) {
@@ -67,31 +65,23 @@ public class DatabaseHelper {
     }
 
     public void createTable(String keyspace, String table) {
-        try (CqlSession session = new CqlSessionCassandraConnectionFactory().create(currentNode).getConnection()) {
-            session.execute(SchemaBuilder.createTable(keyspace, table)
-                                         .ifNotExists()
-                                         .withPartitionKey("id", TEXT)
-                                         .withColumn("name", TEXT)
-                                         .build());
-        }
+        withSession(session -> session.execute(SchemaBuilder.createTable(keyspace, table)
+                                                            .ifNotExists()
+                                                            .withPartitionKey("id", TEXT)
+                                                            .withColumn("name", TEXT)
+                                                            .build()));
     }
 
     public void dropKeyspace(final String keyspaceName) {
-        try (CqlSession session = new CqlSessionCassandraConnectionFactory().create(currentNode).getConnection()) {
-            session.execute(SchemaBuilder.dropKeyspace(keyspaceName).build());
-        }
+        withSession(session -> session.execute(SchemaBuilder.dropKeyspace(keyspaceName).build()));
     }
 
     public void dropTable(final String tableName) {
-        try (CqlSession session = new CqlSessionCassandraConnectionFactory().create(currentNode).getConnection()) {
-            session.execute(SchemaBuilder.dropTable(tableName).build());
-        }
+        withSession(session -> session.execute(SchemaBuilder.dropTable(tableName).build()));
     }
 
     public void truncateTable(final String tableName) {
-        try (CqlSession session = new CqlSessionCassandraConnectionFactory().create(currentNode).getConnection()) {
-            session.execute(QueryBuilder.truncate(tableName).build());
-        }
+        withSession(session -> session.execute(QueryBuilder.truncate(tableName).build()));
     }
 
     public void addData(int records, String keyspace, String table) {
@@ -105,12 +95,10 @@ public class DatabaseHelper {
     }
 
     public void addData(String keyspaceName, String tableName, String primaryKey) {
-        try (CqlSession session = new CqlSessionCassandraConnectionFactory().create(currentNode).getConnection()) {
-            session.execute(insertInto(keyspaceName, tableName)
-                                    .value("id", literal(primaryKey))
-                                    .value("name", literal("stefan1"))
-                                    .build());
-        }
+        withSession(session -> session.execute(insertInto(keyspaceName, tableName)
+                                                       .value("id", literal(primaryKey))
+                                                       .value("name", literal("stefan1"))
+                                                       .build()));
     }
 
     public void addDataAndFlush(String keyspaceName, String tableName) {
@@ -123,10 +111,22 @@ public class DatabaseHelper {
     }
 
     public void dump(String keyspace, String table) {
-        try (CqlSession session = new CqlSessionCassandraConnectionFactory().create(currentNode).getConnection()) {
+        withSession(session -> {
             List<Row> all = session.execute(selectFrom(keyspace, table).all().build()).all();
             Assert.assertFalse(all.isEmpty());
             all.forEach(row -> logger.info(String.format("id: %s, name: %s", row.getString("id"), row.getString("name"))));
+        });
+    }
+
+    private CqlSession getSession() {
+        return new CqlSessionBuilder().addContactPoint(new InetSocketAddress(currentNode.getSettings().getAddress(),
+                                                                             currentNode.getSettings().getPort()))
+                                      .withLocalDatacenter(currentClient.getDc()).build();
+    }
+
+    private void withSession(Consumer<CqlSession> sessionConsumer) {
+        try (final CqlSession session = getSession()) {
+            sessionConsumer.accept(session);
         }
     }
 }

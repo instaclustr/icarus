@@ -10,16 +10,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.nosan.embedded.cassandra.EmbeddedCassandraFactory;
-import com.github.nosan.embedded.cassandra.api.Cassandra;
-import com.github.nosan.embedded.cassandra.api.Version;
-import com.github.nosan.embedded.cassandra.artifact.Artifact;
-import com.github.nosan.embedded.cassandra.commons.io.ClassPathResource;
+import com.github.nosan.embedded.cassandra.Cassandra;
+import com.github.nosan.embedded.cassandra.CassandraBuilder;
+import com.github.nosan.embedded.cassandra.WorkingDirectoryCustomizer;
+import com.github.nosan.embedded.cassandra.commons.ClassPathResource;
 import com.google.common.util.concurrent.ServiceManager;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -46,9 +46,7 @@ public abstract class AbstractCassandraIcarusTest {
 
     protected static final Logger logger = LoggerFactory.getLogger(AbstractCassandraIcarusTest.class);
 
-    protected static final String CASSANDRA_VERSION = System.getProperty("cassandra.version", "3.11.10");
-
-    private static Artifact CASSANDRA_ARTIFACT = Artifact.ofVersion(Version.of(CASSANDRA_VERSION));
+    protected static final String CASSANDRA_VERSION = System.getProperty("cassandra.version", "4.0-rc1");
 
     private final Path cassandraDir = new File("target/cassandra").toPath().toAbsolutePath();
 
@@ -105,23 +103,23 @@ public abstract class AbstractCassandraIcarusTest {
         }
     }
 
-    protected EmbeddedCassandraFactory defaultNodeFactory() throws Exception {
-        EmbeddedCassandraFactory cassandraInstanceFactory = new EmbeddedCassandraFactory();
-        cassandraInstanceFactory.setWorkingDirectory(cassandraDir);
-        cassandraInstanceFactory.setArtifact(CASSANDRA_ARTIFACT);
-        cassandraInstanceFactory.getJvmOptions().add("-Xmx1g");
-        cassandraInstanceFactory.getJvmOptions().add("-Xms1g");
-        cassandraInstanceFactory.setJmxLocalPort(7199);
+    protected Cassandra getCassandra() throws Exception {
+        CassandraBuilder builder = new CassandraBuilder();
+        builder.workingDirectory(() -> cassandraDir)
+               .version(CASSANDRA_VERSION)
+               .jvmOptions("-Xmx1g", "-Xms1g", "-Dcassandra.ring_delay_ms=1000");
 
         if (CASSANDRA_VERSION.startsWith("2")) {
             FileUtils.createDirectory(cassandraDir.resolve("data").resolve("data"));
 
-            cassandraInstanceFactory.getConfigProperties().put("data_file_directories", new String[]{
-                    cassandraDir.resolve("data").resolve("data").toAbsolutePath().toString()
-            });
+            builder.addConfigProperties(new HashMap<String, String[]>() {{
+                put("data_file_directories", new String[]{
+                        cassandraDir.resolve("data").resolve("data").toAbsolutePath().toString()
+                });
+            }});
         }
 
-        return cassandraInstanceFactory;
+        return builder.build();
     }
 
     protected Map<String, Cassandra> customNodes() throws Exception {
@@ -136,12 +134,17 @@ public abstract class AbstractCassandraIcarusTest {
             cassandraInstances.clear();
 
             if (customNodes.isEmpty()) {
-                cassandraInstances.put("datacenter1", defaultNodeFactory().create());
+                cassandraInstances.put("datacenter1", getCassandra());
             } else {
                 cassandraInstances.putAll(customNodes);
             }
 
-            cassandraInstances.values().forEach(Cassandra::start);
+            for (final Cassandra c : cassandraInstances.values()) {
+                c.start();
+                String hostAddress = c.getSettings().getAddress().getHostAddress();
+                waitForOpenPort(hostAddress, 9042);
+            }
+            logger.info("started");
         } catch (Exception ex) {
             logger.error("Some nodes could not be started. Be sure you have 127.0.0.2 interface too for tests which are starting with multiple Cassandra instances.");
         }
@@ -185,7 +188,7 @@ public abstract class AbstractCassandraIcarusTest {
         return Collections.emptyMap();
     }
 
-    protected IcarusHolder sidecar(String jmxAddress, Integer jmxPort, String httpAdddress, Integer httpPort) throws Exception {
+    protected IcarusHolder sidecar(String jmxAddress, Integer jmxPort, String httpAdddress, Integer httpPort, String datacenter) throws Exception {
         CassandraJMXSpec cassandraJMXSpec = new CassandraJMXSpec();
         cassandraJMXSpec.jmxServiceURL = new CassandraJMXServiceURLTypeConverter().convert("service:jmx:rmi:///jndi/rmi://" + jmxAddress + ":" + jmxPort.toString() + "/jmxrmi");
 
@@ -209,13 +212,14 @@ public abstract class AbstractCassandraIcarusTest {
                 .withHostAddress(httpAdddress)
                 .withPort(httpPort)
                 .withObjectMapper(injector.getInstance(ObjectMapper.class))
+                .withDc(datacenter)
                 .build(injector.getInstance(ResourceConfig.class));
 
         return new IcarusHolder(serviceManager, icarusClient, injector);
     }
 
     protected IcarusHolder defaultIcarus() throws Exception {
-        return sidecar("127.0.0.1", 7199, "127.0.0.1", 4567);
+        return sidecar("127.0.0.1", 7199, "127.0.0.1", 4567, "datacenter1");
     }
 
     protected void waitForClosedPort(String hostname, int port) {
@@ -265,59 +269,83 @@ public abstract class AbstractCassandraIcarusTest {
 
     public Map<String, IcarusHolder> twoSidecars() throws Exception {
         return new TreeMap<String, IcarusHolder>() {{
-            put("datacenter1", sidecar("127.0.0.1", 7199, "127.0.0.1", 4567));
-            put("datacenter2", sidecar("127.0.0.1", 7200, "127.0.0.2", 4567));
+            put("datacenter1", sidecar("127.0.0.1", 7199, "127.0.0.1", 4567, "datacenter1"));
+            put("datacenter2", sidecar("127.0.0.1", 7200, "127.0.0.2", 4567, "datacenter2"));
         }};
     }
 
     public TreeMap<String, Cassandra> twoNodes() throws Exception {
-        EmbeddedCassandraFactory factory = defaultNodeFactory();
+        CassandraBuilder builder = new CassandraBuilder();
+        Path workDir = Files.createTempDirectory(null);
+        builder.version(CASSANDRA_VERSION);
+        builder.workingDirectory(() -> workDir);
 
-        factory.setRackConfig(new ClassPathResource("cassandra1-rackdc.properties"));
-        factory.setWorkingDirectory(Files.createTempDirectory(null));
-
-        if (CASSANDRA_VERSION.startsWith("4")) {
-            factory.setConfig(new ClassPathResource("first-4.yaml"));
-        } else if (CASSANDRA_VERSION.startsWith("2")) {
-            factory.setConfig(new ClassPathResource("first-2.yaml"));
-        } else {
-            factory.setConfig(new ClassPathResource("first.yaml"));
-        }
-
-        factory.setJmxLocalPort(7199);
-
-        if (CASSANDRA_VERSION.startsWith("2")) {
-            FileUtils.createDirectory(factory.getWorkingDirectory().resolve("data").resolve("data"));
-
-            factory.getConfigProperties().put("data_file_directories", new String[]{
-                    factory.getWorkingDirectory().resolve("data").resolve("data").toAbsolutePath().toString()
-            });
-        }
-
-        Cassandra firstNode = factory.create();
-
-        factory.setRackConfig(new ClassPathResource("cassandra2-rackdc.properties"));
-        factory.setWorkingDirectory(Files.createTempDirectory(null));
+        List<WorkingDirectoryCustomizer> customizers = new ArrayList<>();
+        customizers.add(WorkingDirectoryCustomizer.addResource(new ClassPathResource("cassandra1-rackdc.properties"),
+                                                               "conf/cassandra-rackdc.properties"));
 
         if (CASSANDRA_VERSION.startsWith("4")) {
-            factory.setConfig(new ClassPathResource("second-4.yaml"));
+            customizers.add(WorkingDirectoryCustomizer.addResource(new ClassPathResource("first-4.yaml"), "conf/cassandra.yaml"));
         } else if (CASSANDRA_VERSION.startsWith("2")) {
-            factory.setConfig(new ClassPathResource("second-2.yaml"));
+            customizers.add(WorkingDirectoryCustomizer.addResource(new ClassPathResource("first-2.yaml"), "conf/cassandra.yaml"));
         } else {
-            factory.setConfig(new ClassPathResource("second.yaml"));
+            customizers.add(WorkingDirectoryCustomizer.addResource(new ClassPathResource("first.yaml"), "conf/cassandra.yaml"));
         }
 
-        factory.setJmxLocalPort(7200);
+        builder.addSystemProperties(new HashMap<String, String>() {{
+            put("cassandra.jmx.local.port", "7199");
+            put("cassandra.ring_delay_ms", "1000");
+        }});
+        builder.addJvmOptions("-Xms1g", "-Xmx1g");
 
         if (CASSANDRA_VERSION.startsWith("2")) {
-            FileUtils.createDirectory(factory.getWorkingDirectory().resolve("data").resolve("data"));
+            FileUtils.createDirectory(workDir.resolve("data").resolve("data"));
 
-            factory.getConfigProperties().put("data_file_directories", new String[]{
-                    factory.getWorkingDirectory().resolve("data").resolve("data").toAbsolutePath().toString()
-            });
+            builder.addConfigProperties(new HashMap<String, String[]>() {{
+                put("data_file_directories", new String[]{workDir.resolve("data").resolve("data").toAbsolutePath().toString()});
+            }});
         }
 
-        Cassandra secondNode = factory.create();
+        builder.addWorkingDirectoryCustomizers(customizers);
+        Cassandra firstNode = builder.build();
+
+        // SECOND NODE
+
+        CassandraBuilder builder2 = new CassandraBuilder();
+        builder2.version(CASSANDRA_VERSION);
+        Path workDir2 = Files.createTempDirectory(null);
+        builder2.workingDirectory(() -> workDir2);
+
+        List<WorkingDirectoryCustomizer> customizers2 = new ArrayList<>();
+        customizers2.add(WorkingDirectoryCustomizer.addResource(new ClassPathResource("cassandra2-rackdc.properties"),
+                                                                "conf/cassandra-rackdc.properties"));
+
+        if (CASSANDRA_VERSION.startsWith("4")) {
+            customizers2.add(WorkingDirectoryCustomizer.addResource(new ClassPathResource("second-4.yaml"), "conf/cassandra.yaml"));
+        } else if (CASSANDRA_VERSION.startsWith("2")) {
+            customizers2.add(WorkingDirectoryCustomizer.addResource(new ClassPathResource("second-2.yaml"), "conf/cassandra.yaml"));
+        } else {
+            customizers2.add(WorkingDirectoryCustomizer.addResource(new ClassPathResource("second.yaml"), "conf/cassandra.yaml"));
+        }
+
+
+        builder2.addSystemProperties(new HashMap<String, String>() {{
+            put("cassandra.jmx.local.port", "7200");
+            put("cassandra.ring_delay_ms", "1000");
+        }});
+
+        builder2.addJvmOptions("-Xms1g", "-Xmx1g");
+
+        if (CASSANDRA_VERSION.startsWith("2")) {
+            FileUtils.createDirectory(workDir2.resolve("data").resolve("data"));
+
+            builder2.addConfigProperties(new HashMap<String, String[]>() {{
+                put("data_file_directories", new String[]{workDir.resolve("data").resolve("data").toAbsolutePath().toString()});
+            }});
+        }
+
+        builder2.addWorkingDirectoryCustomizers(customizers2);
+        Cassandra secondNode = builder2.build();
 
         return new TreeMap<String, Cassandra>() {{
             put("datacenter1", firstNode);

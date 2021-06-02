@@ -4,7 +4,7 @@ import static org.testng.Assert.assertEquals;
 
 import java.util.Map;
 
-import com.github.nosan.embedded.cassandra.api.Cassandra;
+import com.github.nosan.embedded.cassandra.Cassandra;
 import com.instaclustr.icarus.embedded.AbstractCassandraIcarusTest;
 import com.instaclustr.icarus.rest.IcarusClient;
 import com.instaclustr.icarus.service.CassandraStatusService.Status.NodeState;

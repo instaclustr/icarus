@@ -19,7 +19,7 @@
         <mockito.version>2.23.4</mockito.version>
         <awaitility.version>3.1.6</awaitility.version>
         <cassandra.driver.version>4.11.1</cassandra.driver.version>
-        <version.embedded.cassandra>3.0.2</version.embedded.cassandra>
+        <version.embedded.cassandra>4.0.1</version.embedded.cassandra>
 
         <maven.gpg.plugin.version>1.6</maven.gpg.plugin.version>
         <nexus.staging.maven.plugin.version>1.6.8</nexus.staging.maven.plugin.version>
@@ -108,6 +108,32 @@
             <artifactId>embedded-cassandra</artifactId>
             <version>${version.embedded.cassandra}</version>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.datastax.oss</groupId>
+                    <artifactId>java-driver-core</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>com.datastax.oss</groupId>
+            <artifactId>java-driver-core</artifactId>
+            <version>${cassandra.driver.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.tinkerpop</groupId>
+                    <artifactId>gremlin-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.tinkerpop</groupId>
+                    <artifactId>tinkergraph-gremlin</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.tinkerpop</groupId>
+                    <artifactId>gremlin-driver</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
