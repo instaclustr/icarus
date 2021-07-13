@@ -18,6 +18,7 @@ import com.instaclustr.operations.Operation;
 import com.instaclustr.operations.Operation.State;
 import com.instaclustr.operations.OperationCoordinator.OperationCoordinatorException;
 import com.instaclustr.operations.OperationRequest;
+import org.awaitility.core.ConditionTimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,6 +99,14 @@ public abstract class OperationCallable<O extends Operation<T>, T extends Operat
                                                                    icarusClient.getHost(),
                                                                    operationResult.response.getStatus()));
                 } catch (final Exception ex) {
+                    if (ex instanceof ConditionTimeoutException) {
+                        logger.warn(String.format("Operation %s against node %s in phase %s has timeout-ed after %s hours",
+                                                  operation.id,
+                                                  icarusClient.getHost(),
+                                                  phase,
+                                                  timeout));
+                    }
+
                     // this is reached only in case the response itself can not be fetched
                     // if that response itself is returned but that remote operation failed,
                     // it would be treated in try block and returned from there
