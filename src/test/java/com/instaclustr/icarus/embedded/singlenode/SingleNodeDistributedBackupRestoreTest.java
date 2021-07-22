@@ -61,6 +61,7 @@ public class SingleNodeDistributedBackupRestoreTest extends AbstractCassandraIca
                 cassandraDir.resolve("data"), // cassandra dir
                 cassandraDir.resolve("config"), // cassandra config dir
                 false, // restore system keyspace
+                false, // restore system auth keyspace
                 "stefansnapshot-" + schemaVersion, // snapshot + schema version, it does not need to be there, just for testing purposes
                 DatabaseEntities.parse(keyspaceName), // entities
                 false, // update cassandra yaml

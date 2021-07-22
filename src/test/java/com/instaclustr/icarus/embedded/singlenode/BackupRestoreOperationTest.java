@@ -87,6 +87,7 @@ public class BackupRestoreOperationTest extends AbstractCassandraIcarusTest {
                     cassandraDir.resolve("data"), // cassandra dir
                     cassandraDir.resolve("config"), // cassandra config dir
                     false, // restore system keyspace
+                    false, // restore system auth keyspace
                     "stefansnapshot", // snapshot
                     DatabaseEntities.parse(keyspaceName), // entities
                     false, // update cassandra yaml

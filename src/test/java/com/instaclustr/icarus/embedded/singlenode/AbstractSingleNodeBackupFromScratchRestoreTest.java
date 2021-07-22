@@ -117,6 +117,7 @@ public abstract class AbstractSingleNodeBackupFromScratchRestoreTest extends Abs
                 cassandraDir.resolve("data"), // cassandra dir
                 cassandraDir.resolve("config"), // cassandra config dir
                 true, // restore system keyspace
+                false, // restore system auth keyspace
                 snapshotName + "-" + schemaVersion, // snapshot + schema version, it does not need to be there, just for testing purposes
                 null, //DatabaseEntities.parse("system_schema," + keyspaceName), // entities
                 false, // update cassandra yaml
