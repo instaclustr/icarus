@@ -140,6 +140,7 @@ public final class Icarus extends CLIApplication implements Callable<Void> {
             add(new ServiceManagerModule());
             add(new CassandraModule(new CassandraJMXConnectionInfo(jmxSpec.jmxPassword,
                                                                    jmxSpec.jmxUser,
+                                                                   jmxSpec.jmxCredentials,
                                                                    jmxSpec.jmxServiceURL,
                                                                    jmxSpec.trustStore,
                                                                    jmxSpec.trustStorePassword,
