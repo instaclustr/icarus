@@ -9,6 +9,7 @@ import java.net.SocketException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -48,7 +49,10 @@ public abstract class AbstractCassandraIcarusTest {
 
     protected static final String CASSANDRA_VERSION = System.getProperty("cassandra.version", "4.0.0");
 
-    private final Path cassandraDir = new File("target/cassandra").toPath().toAbsolutePath();
+    protected final Path cassandraDir = new File("target/cassandra").toPath().toAbsolutePath();
+    protected final List<Path> dataDirs = Arrays.asList(cassandraDir.resolve("data").resolve("data"));
+    protected final Path target = new File("target").toPath().toAbsolutePath();
+    protected final Path downloadDir = new File("target/downloaded").toPath().toAbsolutePath();
 
     protected static final String keyspaceName = "testkeyspace";
     protected static final String tableName = "testtable";
@@ -77,6 +81,7 @@ public abstract class AbstractCassandraIcarusTest {
         waitForClosedPort("127.0.0.1", 7200);
         waitForClosedPort("127.0.0.2", 7200);
         customAfterClass();
+        FileUtils.deleteDirectory(cassandraDir);
     }
 
     public void customAfterClass() throws Exception {

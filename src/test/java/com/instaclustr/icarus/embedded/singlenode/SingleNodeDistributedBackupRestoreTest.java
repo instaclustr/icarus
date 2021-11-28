@@ -7,6 +7,8 @@ import static com.instaclustr.io.FileUtils.deleteDirectory;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.List;
 
 import com.instaclustr.esop.impl.DatabaseEntities;
 import com.instaclustr.esop.impl.StorageLocation;
@@ -34,7 +36,6 @@ public class SingleNodeDistributedBackupRestoreTest extends AbstractCassandraIca
                 new DataRate(1L, DataRate.DataRateUnit.MBPS), // bandwidth
                 15, // concurrentConnections
                 null, // metadata
-                cassandraDir.resolve("data"), // cassandra dir
                 DatabaseEntities.parse(keyspaceName), //DatabaseEntities.parse("system_schema," + keyspaceName), // entities
                 snapshotName, // snapshot
                 "default", // k8s namespace
@@ -49,7 +50,8 @@ public class SingleNodeDistributedBackupRestoreTest extends AbstractCassandraIca
                 false, // topology file, even it is false, global request does not care, it will upload it anyway
                 null, // proxy
                 null, // retry
-                false // skip refreshing
+                false, // skip refreshing
+                dataDirs // cassandra dir
         );
     }
 
@@ -85,7 +87,8 @@ public class SingleNodeDistributedBackupRestoreTest extends AbstractCassandraIca
                 null, // proxy
                 null, // rename
                 null,
-                false
+                false,
+                dataDirs
         );
     }
 
@@ -122,6 +125,7 @@ public class SingleNodeDistributedBackupRestoreTest extends AbstractCassandraIca
 
     protected final Path target = new File("target").toPath().toAbsolutePath();
     protected final Path cassandraDir = new File("target/cassandra").toPath().toAbsolutePath();
+    protected final List<Path> dataDirs = Arrays.asList(cassandraDir.resolve("data").resolve("data"));
     protected final Path downloadDir = new File("target/downloaded").toPath().toAbsolutePath();
     protected final Path backupDir = Paths.get(target("backup1"));
 

@@ -1,6 +1,5 @@
 package com.instaclustr.icarus.embedded.singlenode;
 
-import static com.instaclustr.esop.impl.restore.RestorationPhase.RestorationPhaseType.INIT;
 import static com.instaclustr.esop.impl.restore.RestorationStrategy.RestorationStrategyType.IN_PLACE;
 import static com.instaclustr.io.FileUtils.createDirectory;
 import static com.instaclustr.io.FileUtils.deleteDirectory;
@@ -12,7 +11,6 @@ import java.util.UUID;
 
 import com.instaclustr.esop.impl.StorageLocation;
 import com.instaclustr.esop.impl.backup.BackupOperationRequest;
-import com.instaclustr.esop.impl.restore.RestorationPhase;
 import com.instaclustr.esop.impl.restore.RestoreOperationRequest;
 import com.instaclustr.esop.impl.retry.RetrySpec;
 import com.instaclustr.esop.topology.CassandraClusterTopology;
@@ -75,7 +73,6 @@ public abstract class AbstractSingleNodeBackupFromScratchRestoreTest extends Abs
                 new DataRate(1L, DataRate.DataRateUnit.MBPS), // bandwidth
                 15, // concurrentConnections
                 null, // metadata
-                cassandraDir.resolve("data"), // cassandra dir
                 null, //DatabaseEntities.parse("system_schema," + keyspaceName), // entities
                 snapshotName, // snapshot
                 "default", // k8s namespace
@@ -90,7 +87,8 @@ public abstract class AbstractSingleNodeBackupFromScratchRestoreTest extends Abs
                 false, // topology file, even it is false, global request does not care, it will upload it anyway
                 null, // proxy settings
                 new RetrySpec(10, RetrySpec.RetryStrategy.EXPONENTIAL, 3, true), // retry
-                false // skip refreshing
+                false, // skip refreshing
+                dataDirs
         );
     }
 
@@ -141,7 +139,8 @@ public abstract class AbstractSingleNodeBackupFromScratchRestoreTest extends Abs
                 null, // proxy settings
                 null, // rename
                 new RetrySpec(10, RetrySpec.RetryStrategy.EXPONENTIAL, 3, true), // retry
-                false
+                false,
+                dataDirs
         );
     }
 

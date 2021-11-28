@@ -21,7 +21,6 @@ import com.instaclustr.esop.guice.BackuperFactory;
 import com.instaclustr.esop.guice.BucketServiceFactory;
 import com.instaclustr.esop.impl.BucketService;
 import com.instaclustr.esop.impl.CassandraData;
-import com.instaclustr.esop.impl.KeyspaceTable;
 import com.instaclustr.esop.impl.StorageLocation;
 import com.instaclustr.esop.impl.backup.BackupOperation;
 import com.instaclustr.esop.impl.backup.BackupOperationRequest;
@@ -74,7 +73,7 @@ public class IcarusBackupOperationCoordinator extends BaseBackupOperationCoordin
         }
 
         try {
-            CassandraData data = CassandraData.parse(operation.request.cassandraDirectory.resolve("data"));
+            CassandraData data = CassandraData.parse(operation.request.dataDirs.get(0));
             data.setDatabaseEntitiesFromRequest(operation.request.entities);
         } catch (final Exception ex) {
             logger.error(ex.getMessage());

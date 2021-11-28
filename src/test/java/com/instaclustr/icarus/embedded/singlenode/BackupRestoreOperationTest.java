@@ -6,9 +6,6 @@ import static com.instaclustr.esop.impl.restore.RestorationPhase.RestorationPhas
 import static com.instaclustr.esop.impl.restore.RestorationPhase.RestorationPhaseType.TRUNCATE;
 import static com.instaclustr.esop.impl.restore.RestorationStrategy.RestorationStrategyType.HARDLINKS;
 
-import java.io.File;
-import java.nio.file.Path;
-
 import com.instaclustr.esop.impl.DatabaseEntities;
 import com.instaclustr.esop.impl.StorageLocation;
 import com.instaclustr.esop.impl._import.ImportOperationRequest;
@@ -36,7 +33,6 @@ public class BackupRestoreOperationTest extends AbstractCassandraIcarusTest {
                     null, // bandwidth
                     null, // concurrent connections
                     null, // metadata directive
-                    cassandraDir.resolve("data"),
                     DatabaseEntities.parse(keyspaceName),
                     "stefansnapshot", // snapshot
                     "default", // k8s namespace
@@ -51,7 +47,8 @@ public class BackupRestoreOperationTest extends AbstractCassandraIcarusTest {
                     false, // upload topology
                     null, // proxy
                     null, // retry
-                    false // skip refreshing
+                    false, // skip refreshing
+                    dataDirs
             );
 
             final OperationResult<BackupOperation> result = icarusHolder.icarusClient.backup(backupOperationRequest);
@@ -111,7 +108,8 @@ public class BackupRestoreOperationTest extends AbstractCassandraIcarusTest {
                     null, // proxy
                     null, // rename
                     null, // retry
-                    false // single
+                    false, // single
+                    dataDirs
             );
 
             icarusHolder.icarusClient.waitForCompleted(icarusHolder.icarusClient.restore(restoreOperationRequest));
@@ -128,14 +126,9 @@ public class BackupRestoreOperationTest extends AbstractCassandraIcarusTest {
             logger.info(String.format("content of %s.%s after restore", keyspaceName, tableName));
             dbHelper.dump(keyspaceName, tableName);
         } catch (final Exception ex) {
-            FileUtils.deleteDirectory(cassandraDir);
             FileUtils.deleteDirectory(downloadDir);
         }
     }
-
-    protected final Path target = new File("target").toPath().toAbsolutePath();
-    protected final Path cassandraDir = new File("target/cassandra").toPath().toAbsolutePath();
-    protected final Path downloadDir = new File("target/downloaded").toPath().toAbsolutePath();
 
     protected String target(final String path) {
         return target.resolve(path).toAbsolutePath().toString();
