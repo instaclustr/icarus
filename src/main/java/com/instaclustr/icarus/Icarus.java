@@ -18,6 +18,7 @@ import com.instaclustr.esop.impl.backup.BackupModules.BackupModule;
 import com.instaclustr.esop.impl.backup.BackupModules.CommitlogBackupModule;
 import com.instaclustr.esop.impl.hash.HashModule;
 import com.instaclustr.esop.impl.hash.HashSpec;
+import com.instaclustr.esop.impl.list.ListModule;
 import com.instaclustr.esop.impl.restore.RestoreModules;
 import com.instaclustr.esop.impl.restore.RestoreModules.RestorationStrategyModule;
 import com.instaclustr.esop.impl.restore.RestoreModules.RestoreCommitlogModule;
@@ -172,6 +173,7 @@ public final class Icarus extends CLIApplication implements Callable<Void> {
             add(new BackupModules.UploadingModule());
             add(new RestoreModules.DownloadingModule());
             add(new HashModule(hashSpec));
+            add(new ListModule());
         }};
     }
 
