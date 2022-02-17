@@ -37,6 +37,10 @@ import com.instaclustr.esop.impl.backup.BackupCommitLogsOperation;
 import com.instaclustr.esop.impl.backup.BackupCommitLogsOperationRequest;
 import com.instaclustr.esop.impl.backup.BackupOperation;
 import com.instaclustr.esop.impl.backup.BackupOperationRequest;
+import com.instaclustr.esop.impl.list.ListOperation;
+import com.instaclustr.esop.impl.list.ListOperationRequest;
+import com.instaclustr.esop.impl.remove.RemoveBackupOperation;
+import com.instaclustr.esop.impl.remove.RemoveBackupRequest;
 import com.instaclustr.esop.impl.restore.RestoreCommitLogsOperation;
 import com.instaclustr.esop.impl.restore.RestoreCommitLogsOperationRequest;
 import com.instaclustr.esop.impl.restore.RestoreOperation;
@@ -286,6 +290,14 @@ public class IcarusClient implements Closeable {
         return performOperationSubmission(operationRequest);
     }
 
+    public OperationResult<RemoveBackupOperation> remove(RemoveBackupRequest operationRequest) {
+        return performOperationSubmission(operationRequest);
+    }
+
+    public OperationResult<ListOperation> list(ListOperationRequest operationRequest) {
+        return performOperationSubmission(operationRequest);
+    }
+
     public Collection<Operation<?>> getOperations() {
         return getOperations(ImmutableSet.of(), ImmutableSet.of());
     }
@@ -335,12 +347,15 @@ public class IcarusClient implements Closeable {
         return operationsWebTarget.path(operationId.toString()).request(APPLICATION_JSON).get(Operation.class);
     }
 
-    public <T extends OperationRequest> Operation<T> getOperation(final UUID operationId, final T operationRequest) {
-
+    public <T extends OperationRequest> Operation<T> getOperation(final UUID operationId, final Class<T> operationRequest) {
         final String stringBody = operationsWebTarget.path(operationId.toString()).request(APPLICATION_JSON).get().readEntity(String.class);
-        final JavaType javaType = objectMapper.getTypeFactory().constructParametricType(Operation.class, operationRequest.getClass());
+        final JavaType javaType = objectMapper.getTypeFactory().constructParametricType(Operation.class, operationRequest);
 
         return (Operation<T>) parseString(stringBody, javaType);
+    }
+
+    public <T extends OperationRequest> Operation<T> getOperation(final UUID operationId, final T operationRequest) {
+        return getOperation(operationId, (Class<T>) operationRequest.getClass());
     }
 
     private Object parseString(final String body, final JavaType javaType) {

@@ -1,23 +1,31 @@
 package com.instaclustr.icarus.embedded.singlenode;
 
-import static com.instaclustr.esop.impl.restore.RestorationStrategy.RestorationStrategyType.IN_PLACE;
-import static com.instaclustr.io.FileUtils.createDirectory;
-import static com.instaclustr.io.FileUtils.deleteDirectory;
-
-import java.io.File;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.UUID;
-
 import com.instaclustr.esop.impl.StorageLocation;
 import com.instaclustr.esop.impl.backup.BackupOperationRequest;
+import com.instaclustr.esop.impl.list.ListOperation;
+import com.instaclustr.esop.impl.list.ListOperationRequest;
+import com.instaclustr.esop.impl.remove.RemoveBackupRequest;
 import com.instaclustr.esop.impl.restore.RestoreOperationRequest;
 import com.instaclustr.esop.impl.retry.RetrySpec;
 import com.instaclustr.esop.topology.CassandraClusterTopology;
 import com.instaclustr.esop.topology.CassandraClusterTopology.ClusterTopology;
 import com.instaclustr.icarus.embedded.AbstractCassandraIcarusTest;
 import com.instaclustr.icarus.embedded.DatabaseHelper;
+import com.instaclustr.icarus.rest.IcarusClient;
 import com.instaclustr.measure.DataRate;
+import com.instaclustr.operations.Operation;
+import com.instaclustr.operations.OperationRequest;
+import org.testng.Assert;
+
+import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.UUID;
+
+import static com.instaclustr.esop.impl.restore.RestorationStrategy.RestorationStrategyType.IN_PLACE;
+import static com.instaclustr.io.FileUtils.createDirectory;
+import static com.instaclustr.io.FileUtils.deleteDirectory;
+import static org.testng.Assert.*;
 
 public abstract class AbstractSingleNodeBackupFromScratchRestoreTest extends AbstractCassandraIcarusTest {
 
@@ -28,9 +36,9 @@ public abstract class AbstractSingleNodeBackupFromScratchRestoreTest extends Abs
         IcarusHolder icarusHolder = icaruses.get("datacenter1");
 
         CassandraClusterTopology.ClusterTopology topology = icarusHolder.icarusClient.getCassandraClusterTopology("datacenter1");
+        final StorageLocation location = getStorageLocation(cloud, topology);
 
-        BackupOperationRequest backupOperationRequest1 = createBackupRequest(cloud, "snapshot1", topology);
-
+        BackupOperationRequest backupOperationRequest1 = createBackupRequest(location,"snapshot1");
         icarusHolder.icarusClient.waitForCompleted(icarusHolder.icarusClient.backup(backupOperationRequest1));
 
         stopNodes();
@@ -39,21 +47,85 @@ public abstract class AbstractSingleNodeBackupFromScratchRestoreTest extends Abs
         deleteDirectory(cassandraDir);
         createDirectory(cassandraDir.resolve("data"));
 
-        RestoreOperationRequest restoreOperationRequest = createRestoreOperationRequest(cloud, "snapshot1", topology);
-
+        RestoreOperationRequest restoreOperationRequest = createRestoreOperationRequest(location, "snapshot1", topology);
         icarusHolder.icarusClient.waitForCompleted(icarusHolder.icarusClient.restore(restoreOperationRequest));
 
         startNodes();
+
+        // list backups
+        Operation<ListOperationRequest> listOperation = listBackups(location, icarusHolder);
+        assertFalse(listOperation.request.response.reports.isEmpty());
+        int numberOfBackups = listOperation.request.response.reports.size();
+
+        final String backupNameToRemove = listOperation.request.response.reports.get(0).name;
+
+        // remove backups
+        icarusHolder.icarusClient.waitForCompleted(icarusHolder.icarusClient.remove(createRemoveBackupRequest(location, backupNameToRemove)));
+
+        Operation<ListOperationRequest> listOperationAfterBackupRemoval = listBackups(location, icarusHolder);
+        int newNumberOfBackups = listOperationAfterBackupRemoval.request.response.reports.size();
+
+        // we deleted one backup
+        Assert.assertEquals(numberOfBackups - 1, newNumberOfBackups);
 
         DatabaseHelper helper = new DatabaseHelper(cassandraInstances, icaruses);
 
         helper.dump(keyspaceName, tableName);
     }
 
-    private BackupOperationRequest createBackupRequest(final String cloud,
-                                                       final String snapshotName,
-                                                       final ClusterTopology topology) {
+    private Operation<ListOperationRequest> listBackups(StorageLocation location,
+                                                        IcarusHolder icarusHolder) {
+        ListOperationRequest listRequest = createListRequest(location);
+        IcarusClient.OperationResult<ListOperation> listResult = icarusHolder.icarusClient.list(listRequest);
+        icarusHolder.icarusClient.waitForCompleted(listResult);
+        Operation<ListOperationRequest> operation = icarusHolder.icarusClient.getOperation(listResult.operation.id, ListOperationRequest.class);
+        return operation;
+    }
 
+    private RemoveBackupRequest createRemoveBackupRequest(final StorageLocation storageLocation,
+                                                          final String backupName) {
+        return new RemoveBackupRequest("remove-backup",
+                                       storageLocation,
+                                       null,
+                                       null,
+                                       false,
+                                       false,
+                                       null,
+                                       null,
+                                       backupName,
+                                       false,
+                                       true,
+                                       null,
+                                       esopCacheDir,
+                                       false,
+                                       null);
+    }
+
+    private ListOperationRequest createListRequest(final StorageLocation storageLocation) {
+        return new ListOperationRequest("list",
+                                        storageLocation,
+                                        null,
+                                        null,
+                                        false,
+                                        false,
+                                        null,
+                                        null,
+                                        false,
+                                        true,
+                                        false,
+                                        null,
+                                        false,
+                                        null,
+                                        null,
+                                        false,
+                                        esopCacheDir,
+                                        true,
+                                        null,
+                                        null);
+    }
+
+    private StorageLocation getStorageLocation(final String cloud,
+                                               final ClusterTopology topology) {
         final String clusterName = topology.clusterName;
         final String datacenter = topology.getDcs().stream().findFirst().get();
         final String nodeId = topology.topology.get(0).nodeId.toString();
@@ -66,6 +138,10 @@ public abstract class AbstractSingleNodeBackupFromScratchRestoreTest extends Abs
             location = new StorageLocation(String.format("file://%s/%s/%s/%s", target("backup1"), clusterName, datacenter, nodeId));
         }
 
+        return location;
+    }
+
+    private BackupOperationRequest createBackupRequest(final StorageLocation location, final String snapshotName) {
         return new BackupOperationRequest(
                 "backup", // type
                 location,
@@ -92,22 +168,10 @@ public abstract class AbstractSingleNodeBackupFromScratchRestoreTest extends Abs
         );
     }
 
-    private RestoreOperationRequest createRestoreOperationRequest(final String cloud,
+    private RestoreOperationRequest createRestoreOperationRequest(final StorageLocation location,
                                                                   final String snapshotName,
                                                                   final ClusterTopology topology) {
-        final String clusterName = topology.clusterName;
-        final String datacenter = topology.getDcs().stream().findFirst().get();
-        final String nodeId = topology.topology.get(0).nodeId.toString();
         final String schemaVersion = topology.schemaVersion;
-
-        StorageLocation location;
-
-        if (cloud.equals("s3") || cloud.equals("azure") || cloud.equals("gcp")) {
-            location = new StorageLocation(String.format(cloud + "://" + BUCKET + "/%s/%s/%s", clusterName, datacenter, nodeId));
-        } else {
-            location = new StorageLocation(String.format("file://%s/%s/%s/%s", target("backup1"), clusterName, datacenter, nodeId));
-        }
-
         return new RestoreOperationRequest(
                 "restore", // type
                 location,
@@ -149,6 +213,7 @@ public abstract class AbstractSingleNodeBackupFromScratchRestoreTest extends Abs
         deleteDirectory(cassandraDir);
         deleteDirectory(downloadDir);
         deleteDirectory(backupDir);
+        deleteDirectory(esopCacheDir);
     }
 
     protected final Path target = new File("target").toPath().toAbsolutePath();

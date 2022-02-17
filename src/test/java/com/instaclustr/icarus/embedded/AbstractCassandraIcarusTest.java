@@ -1,6 +1,5 @@
 package com.instaclustr.icarus.embedded;
 
-import static java.util.concurrent.TimeUnit.HOURS;
 import static org.awaitility.Awaitility.await;
 
 import java.io.File;
@@ -8,6 +7,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -53,6 +53,7 @@ public abstract class AbstractCassandraIcarusTest {
     protected final List<Path> dataDirs = Arrays.asList(cassandraDir.resolve("data").resolve("data"));
     protected final Path target = new File("target").toPath().toAbsolutePath();
     protected final Path downloadDir = new File("target/downloaded").toPath().toAbsolutePath();
+    protected final Path esopCacheDir = new File("target/.esop").toPath().toAbsolutePath();
 
     protected static final String keyspaceName = "testkeyspace";
     protected static final String tableName = "testtable";
@@ -199,7 +200,7 @@ public abstract class AbstractCassandraIcarusTest {
 
         SidecarSpec icarusSpec = new SidecarSpec();
         icarusSpec.httpServerAddress = new HttpServerInetSocketAddressTypeConverter().convert(httpAdddress + ":" + httpPort.toString());
-        icarusSpec.operationsExpirationPeriod = new Time(1L, HOURS);
+        icarusSpec.operationsExpirationPeriod = new Time(1L, Time.TimeUnit.HOURS);
 
         HashSpec hashSpec = new HashSpec();
 
