@@ -14,7 +14,6 @@ import com.instaclustr.icarus.embedded.DatabaseHelper;
 import com.instaclustr.icarus.rest.IcarusClient;
 import com.instaclustr.measure.DataRate;
 import com.instaclustr.operations.Operation;
-import com.instaclustr.operations.OperationRequest;
 import org.testng.Assert;
 
 import java.io.File;
@@ -98,7 +97,8 @@ public abstract class AbstractSingleNodeBackupFromScratchRestoreTest extends Abs
                                        null,
                                        esopCacheDir,
                                        false,
-                                       null);
+                                       null,
+                                       false);
     }
 
     private ListOperationRequest createListRequest(final StorageLocation storageLocation) {
