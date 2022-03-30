@@ -161,7 +161,7 @@ public class IcarusRestoreOperationCoordinator extends BaseRestoreOperationCoord
         }
 
         try {
-            CassandraData data = CassandraData.parse(operation.request.cassandraDirectory.resolve("data"));
+            CassandraData data = CassandraData.parse(operation.request.dataDirs.get(0));
             data.setDatabaseEntitiesFromRequest(operation.request.entities);
             data.setRenamedEntitiesFromRequest(operation.request.rename);
         } catch (final Exception ex) {
