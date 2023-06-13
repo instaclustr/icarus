@@ -1,21 +1,5 @@
 package com.instaclustr.icarus.embedded;
 
-import static org.awaitility.Awaitility.await;
-
-import java.io.File;
-import java.net.Socket;
-import java.net.SocketException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.nosan.embedded.cassandra.Cassandra;
 import com.github.nosan.embedded.cassandra.CassandraBuilder;
@@ -30,10 +14,13 @@ import com.instaclustr.icarus.Icarus;
 import com.instaclustr.icarus.rest.IcarusClient;
 import com.instaclustr.io.FileUtils;
 import com.instaclustr.measure.Time;
+import com.instaclustr.operations.FunctionWithEx;
 import com.instaclustr.picocli.CassandraJMXSpec;
 import com.instaclustr.picocli.typeconverter.CassandraJMXServiceURLTypeConverter;
 import com.instaclustr.sidecar.picocli.SidecarSpec;
 import com.instaclustr.sidecar.picocli.SidecarSpec.HttpServerInetSocketAddressTypeConverter;
+import jmx.org.apache.cassandra.service.CassandraJMXService;
+import jmx.org.apache.cassandra.service.cassandra4.Cassandra4StorageServiceMBean;
 import org.awaitility.Duration;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.slf4j.Logger;
@@ -43,11 +30,26 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 
+import java.io.File;
+import java.net.Socket;
+import java.net.SocketException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+
+import static org.awaitility.Awaitility.await;
+
 public abstract class AbstractCassandraIcarusTest {
 
     protected static final Logger logger = LoggerFactory.getLogger(AbstractCassandraIcarusTest.class);
 
-    protected static final String CASSANDRA_VERSION = System.getProperty("cassandra.version", "4.0.0");
+    protected static final String CASSANDRA_VERSION = System.getProperty("cassandra.version", "4.1.0");
 
     protected final Path cassandraDir = new File("target/cassandra").toPath().toAbsolutePath();
     protected final List<Path> dataDirs = Arrays.asList(cassandraDir.resolve("data").resolve("data"));
@@ -61,6 +63,7 @@ public abstract class AbstractCassandraIcarusTest {
 
     protected Map<String, Cassandra> cassandraInstances = new TreeMap<>();
     protected Map<String, IcarusHolder> icaruses = new TreeMap<>();
+    protected CassandraJMXService jmxService;
 
     protected IcarusClient icarusClient;
     protected DatabaseHelper dbHelper;
@@ -72,6 +75,7 @@ public abstract class AbstractCassandraIcarusTest {
 
         dbHelper = new DatabaseHelper(cassandraInstances, icaruses);
         icarusClient = icaruses.get("datacenter1").icarusClient;
+        initializeJMXService();
     }
 
     @AfterClass
@@ -93,6 +97,21 @@ public abstract class AbstractCassandraIcarusTest {
     public void beforeMethod() {
         dbHelper.createKeyspaceAndTable(keyspaceName, tableName);
 
+        try
+        {
+            jmxService.doWithCassandra4StorageServiceMBean(new FunctionWithEx<Cassandra4StorageServiceMBean, Void>() {
+                @Override
+                public Void apply(Cassandra4StorageServiceMBean object) throws Exception {
+                    object.disableAutoCompaction(keyspaceName);
+
+                    return null;
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            throw new RuntimeException(ex.getMessage());
+        }
         for (int i = 0; i < numberOfSSTables; i++) {
             dbHelper.addDataAndFlush(keyspaceName, tableName);
             dbHelper.addDataAndFlush(keyspaceName, tableName);
@@ -106,6 +125,18 @@ public abstract class AbstractCassandraIcarusTest {
             dbHelper.dropKeyspace(keyspaceName);
         } catch (Exception ex) {
             // intentionally empty
+        }
+    }
+
+    private void initializeJMXService()
+    {
+        try
+        {
+            jmxService = icaruses.get("datacenter1").injector.getInstance(CassandraJMXService.class);
+        }
+        catch (Throwable th)
+        {
+            throw new RuntimeException();
         }
     }
 
@@ -290,7 +321,9 @@ public abstract class AbstractCassandraIcarusTest {
         customizers.add(WorkingDirectoryCustomizer.addResource(new ClassPathResource("cassandra1-rackdc.properties"),
                                                                "conf/cassandra-rackdc.properties"));
 
-        if (CASSANDRA_VERSION.startsWith("4")) {
+        if (CASSANDRA_VERSION.startsWith("5")) {
+            customizers.add(WorkingDirectoryCustomizer.addResource(new ClassPathResource("first-5.yaml"), "conf/cassandra.yaml"));
+        } else if (CASSANDRA_VERSION.startsWith("4")) {
             customizers.add(WorkingDirectoryCustomizer.addResource(new ClassPathResource("first-4.yaml"), "conf/cassandra.yaml"));
         } else if (CASSANDRA_VERSION.startsWith("2")) {
             customizers.add(WorkingDirectoryCustomizer.addResource(new ClassPathResource("first-2.yaml"), "conf/cassandra.yaml"));
@@ -326,7 +359,9 @@ public abstract class AbstractCassandraIcarusTest {
         customizers2.add(WorkingDirectoryCustomizer.addResource(new ClassPathResource("cassandra2-rackdc.properties"),
                                                                 "conf/cassandra-rackdc.properties"));
 
-        if (CASSANDRA_VERSION.startsWith("4")) {
+        if (CASSANDRA_VERSION.startsWith("5")) {
+            customizers2.add(WorkingDirectoryCustomizer.addResource(new ClassPathResource("second-5.yaml"), "conf/cassandra.yaml"));
+        } else if (CASSANDRA_VERSION.startsWith("4")) {
             customizers2.add(WorkingDirectoryCustomizer.addResource(new ClassPathResource("second-4.yaml"), "conf/cassandra.yaml"));
         } else if (CASSANDRA_VERSION.startsWith("2")) {
             customizers2.add(WorkingDirectoryCustomizer.addResource(new ClassPathResource("second-2.yaml"), "conf/cassandra.yaml"));

@@ -1,21 +1,21 @@
 package com.instaclustr.icarus.embedded.singlenode;
 
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
-
-import java.util.Collections;
-
 import com.google.common.collect.ImmutableSet;
 import com.instaclustr.cassandra.CassandraVersion;
+import com.instaclustr.icarus.embedded.AbstractCassandraIcarusTest;
 import com.instaclustr.icarus.operations.cleanup.CleanupOperationRequest;
 import com.instaclustr.icarus.operations.flush.FlushOperationRequest;
 import com.instaclustr.icarus.operations.refresh.RefreshOperationRequest;
 import com.instaclustr.icarus.operations.scrub.ScrubOperationRequest;
 import com.instaclustr.icarus.operations.upgradesstables.UpgradeSSTablesOperationRequest;
 import com.instaclustr.icarus.service.CassandraService.CassandraSchemaVersion;
-import com.instaclustr.icarus.embedded.AbstractCassandraIcarusTest;
 import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
+
+import java.util.Collections;
+
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 
 public class EmbeddedCassandraOperationsTest extends AbstractCassandraIcarusTest {
 

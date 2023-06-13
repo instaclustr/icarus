@@ -5,7 +5,6 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
-import javax.ws.rs.core.Response;
 import java.net.URI;
 import java.util.Collection;
 import java.util.HashMap;
@@ -22,6 +21,7 @@ import com.google.inject.TypeLiteral;
 import com.instaclustr.icarus.operations.decommission.DecommissionOperationRequest;
 import com.instaclustr.sidecar.operations.OperationsResource;
 import com.instaclustr.threading.ExecutorsModule;
+import jakarta.ws.rs.core.Response;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
@@ -91,7 +91,7 @@ public class IcarusFailingOperationTest {
         Operation submittedOperation = operationsResource.getOperationById(operationID);
         assertNotNull(submittedOperation.id);
 
-        final Collection<Operation> allOperations = operationsResource.getOperations(ImmutableSet.of(), ImmutableSet.of());
+        final Collection<Operation<?>> allOperations = operationsResource.getOperations(ImmutableSet.of(), ImmutableSet.of());
         assertFalse(allOperations.isEmpty());
 
         // check that this is operation we wanted and it is in running state
@@ -103,7 +103,7 @@ public class IcarusFailingOperationTest {
 
         Thread.sleep(1000); // sleep here cause this test proceeds but it is not finished yet
 
-        Operation finishedOperation = operationsResource.getOperationById(operationID);
+        Operation<?> finishedOperation = operationsResource.getOperationById(operationID);
         assertNotNull(operationID);
 
         System.out.println(finishedOperation);

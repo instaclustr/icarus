@@ -1,15 +1,15 @@
 package com.instaclustr.icarus.embedded.multinode;
 
-import static org.testng.Assert.assertEquals;
-
-import java.util.Map;
-
 import com.github.nosan.embedded.cassandra.Cassandra;
 import com.instaclustr.icarus.embedded.AbstractCassandraIcarusTest;
 import com.instaclustr.icarus.rest.IcarusClient;
 import com.instaclustr.icarus.service.CassandraStatusService.Status.NodeState;
 import org.awaitility.Duration;
 import org.testng.annotations.Test;
+
+import java.util.Map;
+
+import static org.testng.Assert.assertEquals;
 
 public class DecommissionTest extends AbstractCassandraIcarusTest {
 

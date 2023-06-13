@@ -31,12 +31,12 @@ public class IcarusAggregationCommand extends CLIApplication implements Runnable
     }
 
     @Override
-    public String getImplementationTitle() {
-        return "icarus-aggregator";
+    public void run() {
+        throw new CommandLine.ParameterException(spec.commandLine(), "Missing required sub-command.");
     }
 
     @Override
-    public void run() {
-        throw new CommandLine.ParameterException(spec.commandLine(), "Missing required sub-command.");
+    public String title() {
+        return "icarus-aggregator";
     }
 }

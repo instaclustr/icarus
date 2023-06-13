@@ -34,7 +34,6 @@ import com.instaclustr.icarus.operations.drain.DrainModule;
 import com.instaclustr.icarus.operations.flush.FlushModule;
 import com.instaclustr.icarus.operations.rebuild.RebuildModule;
 import com.instaclustr.icarus.operations.refresh.RefreshModule;
-import com.instaclustr.icarus.operations.restart.RestartModule;
 import com.instaclustr.icarus.operations.scrub.ScrubModule;
 import com.instaclustr.icarus.operations.icarus.IcarusModule;
 import com.instaclustr.icarus.operations.upgradesstables.UpgradeSSTablesModule;
@@ -97,18 +96,10 @@ public final class Icarus extends CLIApplication implements Callable<Void> {
 
     @Override
     public Void call() throws Exception {
-
-        logCommandVersionInformation(commandSpec);
-
         // production binds singletons as eager by default
         final Injector injector = createInjector(PRODUCTION, getModules(icarusSpec, jmxSpec, hashSpec, enableTruncateOperation));
 
         return injector.getInstance(Application.class).call();
-    }
-
-    @Override
-    public String getImplementationTitle() {
-        return "instaclustr-icarus";
     }
 
     public List<AbstractModule> getModules(final SidecarSpec icarusSpec,
@@ -187,11 +178,15 @@ public final class Icarus extends CLIApplication implements Callable<Void> {
             add(new RebuildModule());
             add(new ScrubModule());
             add(new DrainModule());
-            add(new RestartModule());
             add(new IcarusModule());
             add(new RefreshModule());
             add(new FlushModule());
             add(new ImportModule());
         }};
+    }
+
+    @Override
+    public String title() {
+        return "instaclustr-icarus";
     }
 }

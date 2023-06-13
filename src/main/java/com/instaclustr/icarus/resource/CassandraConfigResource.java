@@ -1,11 +1,10 @@
 package com.instaclustr.icarus.resource;
 
-import static javax.ws.rs.core.Response.Status.NOT_FOUND;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Response;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Response;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Optional;
@@ -26,7 +25,7 @@ public class CassandraConfigResource {
             if (cassandraYaml.isPresent()) {
                 return Response.ok(new String(Files.readAllBytes(cassandraYaml.get())), "application/yaml").build();
             } else {
-                return Response.status(NOT_FOUND).build();
+                return Response.status(Response.Status.NOT_FOUND).build();
             }
         } catch (final Exception ex) {
             return Response.serverError().build();

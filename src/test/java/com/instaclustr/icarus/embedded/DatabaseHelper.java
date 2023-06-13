@@ -1,18 +1,5 @@
 package com.instaclustr.icarus.embedded;
 
-import static com.datastax.oss.driver.api.core.type.DataTypes.TEXT;
-import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.insertInto;
-import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.literal;
-import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.selectFrom;
-
-import java.net.InetSocketAddress;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.function.Consumer;
-
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.cql.Row;
@@ -25,6 +12,19 @@ import com.instaclustr.icarus.rest.IcarusClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
+
+import java.net.InetSocketAddress;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.function.Consumer;
+
+import static com.datastax.oss.driver.api.core.type.DataTypes.TEXT;
+import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.insertInto;
+import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.literal;
+import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.selectFrom;
 
 public class DatabaseHelper {
 
@@ -42,6 +42,11 @@ public class DatabaseHelper {
         this.nodes = nodes;
         this.icarusClients = icarusClients;
         switchHelper(defaultDC);
+    }
+
+    public IcarusClient getClient()
+    {
+        return currentClient;
     }
 
     public void switchHelper(String datacenter) {

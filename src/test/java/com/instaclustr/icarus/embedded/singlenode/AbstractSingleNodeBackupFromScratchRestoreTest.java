@@ -12,7 +12,6 @@ import com.instaclustr.esop.topology.CassandraClusterTopology.ClusterTopology;
 import com.instaclustr.icarus.embedded.AbstractCassandraIcarusTest;
 import com.instaclustr.icarus.embedded.DatabaseHelper;
 import com.instaclustr.icarus.rest.IcarusClient;
-import com.instaclustr.measure.DataRate;
 import com.instaclustr.operations.Operation;
 import org.testng.Assert;
 
@@ -24,7 +23,7 @@ import java.util.UUID;
 import static com.instaclustr.esop.impl.restore.RestorationStrategy.RestorationStrategyType.IN_PLACE;
 import static com.instaclustr.io.FileUtils.createDirectory;
 import static com.instaclustr.io.FileUtils.deleteDirectory;
-import static org.testng.Assert.*;
+import static org.testng.Assert.assertFalse;
 
 public abstract class AbstractSingleNodeBackupFromScratchRestoreTest extends AbstractCassandraIcarusTest {
 
@@ -85,8 +84,6 @@ public abstract class AbstractSingleNodeBackupFromScratchRestoreTest extends Abs
                                                           final String backupName) {
         return new RemoveBackupRequest("remove-backup",
                                        storageLocation,
-                                       null,
-                                       null,
                                        false,
                                        false,
                                        null,
@@ -104,8 +101,6 @@ public abstract class AbstractSingleNodeBackupFromScratchRestoreTest extends Abs
     private ListOperationRequest createListRequest(final StorageLocation storageLocation) {
         return new ListOperationRequest("list",
                                         storageLocation,
-                                        null,
-                                        null,
                                         false,
                                         false,
                                         null,
@@ -146,13 +141,11 @@ public abstract class AbstractSingleNodeBackupFromScratchRestoreTest extends Abs
                 "backup", // type
                 location,
                 null, // duration
-                new DataRate(1L, DataRate.DataRateUnit.MBPS), // bandwidth
+                null, // new DataRate(1L, DataRate.DataRateUnit.MBPS), // bandwidth
                 15, // concurrentConnections
                 null, // metadata
                 null, //DatabaseEntities.parse("system_schema," + keyspaceName), // entities
                 snapshotName, // snapshot
-                "default", // k8s namespace
-                "test-sidecar-secret", // k8s secret
                 true, // !!! GLOBAL REQUEST !!!
                 null, // DC is null so will backup all datacenters
                 null, // timeout
@@ -164,7 +157,8 @@ public abstract class AbstractSingleNodeBackupFromScratchRestoreTest extends Abs
                 null, // proxy settings
                 new RetrySpec(10, RetrySpec.RetryStrategy.EXPONENTIAL, 3, true), // retry
                 false, // skip refreshing
-                dataDirs
+                dataDirs,
+                null
         );
     }
 
@@ -191,8 +185,6 @@ public abstract class AbstractSingleNodeBackupFromScratchRestoreTest extends Abs
                 false, // noDownloadData
                 false, // exactSchemaVersion
                 null, // schema version
-                null, // k8s namespace
-                null, // k8s secret name
                 false, // !!! GLOBAL REQUEST !!!
                 null, // dc
                 null, // timeout,
@@ -204,7 +196,8 @@ public abstract class AbstractSingleNodeBackupFromScratchRestoreTest extends Abs
                 null, // rename
                 new RetrySpec(10, RetrySpec.RetryStrategy.EXPONENTIAL, 3, true), // retry
                 false,
-                dataDirs
+                dataDirs,
+                null
         );
     }
 

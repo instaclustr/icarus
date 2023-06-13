@@ -1,7 +1,5 @@
 package com.instaclustr.icarus.operations.upgradesstables;
 
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotEmpty;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -63,10 +61,8 @@ public class UpgradeSSTablesOperationRequest extends OperationRequest {
 
     public final boolean includeAllSStables;
 
-    @Min(0)
     public final int jobs;
 
-    @NotEmpty
     public final String keyspace;
 
     public final Set<String> tables;

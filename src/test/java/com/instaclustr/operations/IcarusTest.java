@@ -5,7 +5,6 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
-import javax.ws.rs.core.Response;
 import java.net.URI;
 import java.util.Collection;
 import java.util.HashMap;
@@ -22,6 +21,7 @@ import com.google.inject.TypeLiteral;
 import com.instaclustr.icarus.operations.decommission.DecommissionOperationRequest;
 import com.instaclustr.sidecar.operations.OperationsResource;
 import com.instaclustr.threading.ExecutorsModule;
+import jakarta.ws.rs.core.Response;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
@@ -91,7 +91,7 @@ public class IcarusTest {
         Operation submittedOperation = operationsResource.getOperationById(operationID);
         assertNotNull(operationID);
 
-        final Collection<Operation> allOperations = operationsResource.getOperations(ImmutableSet.of(), ImmutableSet.of());
+        final Collection<Operation<?>> allOperations = operationsResource.getOperations(ImmutableSet.of(), ImmutableSet.of());
         assertFalse(allOperations.isEmpty());
 
         // check that this is operation we wanted and it is in running state
@@ -109,7 +109,7 @@ public class IcarusTest {
         // check it is completed and completed status is returned from all operations endpoint too
         assertEquals(finishedOperation.state, Operation.State.COMPLETED);
 
-        final Collection<Operation> allOperationsAfterFinish = operationsResource.getOperations(ImmutableSet.of(), ImmutableSet.of());
+        final Collection<Operation<?>> allOperationsAfterFinish = operationsResource.getOperations(ImmutableSet.of(), ImmutableSet.of());
         assertFalse(allOperationsAfterFinish.isEmpty());
 
         assertTrue(allOperations.stream().anyMatch(op -> op.id.equals(operationID) && op.state == Operation.State.COMPLETED));

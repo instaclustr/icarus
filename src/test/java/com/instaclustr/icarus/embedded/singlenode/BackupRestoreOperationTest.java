@@ -1,23 +1,22 @@
 package com.instaclustr.icarus.embedded.singlenode;
 
-import static com.instaclustr.esop.impl.restore.RestorationPhase.RestorationPhaseType.CLEANUP;
-import static com.instaclustr.esop.impl.restore.RestorationPhase.RestorationPhaseType.DOWNLOAD;
-import static com.instaclustr.esop.impl.restore.RestorationPhase.RestorationPhaseType.IMPORT;
-import static com.instaclustr.esop.impl.restore.RestorationPhase.RestorationPhaseType.TRUNCATE;
-import static com.instaclustr.esop.impl.restore.RestorationStrategy.RestorationStrategyType.HARDLINKS;
-
 import com.instaclustr.esop.impl.DatabaseEntities;
 import com.instaclustr.esop.impl.StorageLocation;
 import com.instaclustr.esop.impl._import.ImportOperationRequest;
 import com.instaclustr.esop.impl.backup.BackupOperation;
 import com.instaclustr.esop.impl.backup.BackupOperationRequest;
-import com.instaclustr.esop.impl.remove.RemoveBackupRequest;
 import com.instaclustr.esop.impl.restore.RestoreOperationRequest;
 import com.instaclustr.esop.impl.truncate.TruncateOperationRequest;
 import com.instaclustr.icarus.embedded.AbstractCassandraIcarusTest;
 import com.instaclustr.icarus.rest.IcarusClient.OperationResult;
 import com.instaclustr.io.FileUtils;
 import org.testng.annotations.Test;
+
+import static com.instaclustr.esop.impl.restore.RestorationPhase.RestorationPhaseType.CLEANUP;
+import static com.instaclustr.esop.impl.restore.RestorationPhase.RestorationPhaseType.DOWNLOAD;
+import static com.instaclustr.esop.impl.restore.RestorationPhase.RestorationPhaseType.IMPORT;
+import static com.instaclustr.esop.impl.restore.RestorationPhase.RestorationPhaseType.TRUNCATE;
+import static com.instaclustr.esop.impl.restore.RestorationStrategy.RestorationStrategyType.HARDLINKS;
 
 public class BackupRestoreOperationTest extends AbstractCassandraIcarusTest {
 
@@ -36,8 +35,6 @@ public class BackupRestoreOperationTest extends AbstractCassandraIcarusTest {
                     null, // metadata directive
                     DatabaseEntities.parse(keyspaceName),
                     "stefansnapshot", // snapshot
-                    "default", // k8s namespace
-                    "test-sidecar-secret", // k8s secret
                     false, // global request
                     null, // dc
                     null, // timeout
@@ -49,7 +46,8 @@ public class BackupRestoreOperationTest extends AbstractCassandraIcarusTest {
                     null, // proxy
                     null, // retry
                     false, // skip refreshing
-                    dataDirs
+                    dataDirs,
+                    null
             );
 
             final OperationResult<BackupOperation> result = icarusHolder.icarusClient.backup(backupOperationRequest);
@@ -97,8 +95,6 @@ public class BackupRestoreOperationTest extends AbstractCassandraIcarusTest {
                     false, // no download data
                     false, // exact schema version
                     null, // schema version
-                    null, // k8s namespace
-                    null, // k8s secret name
                     false, // NO GLOBAL REQUEST
                     null, // dc
                     null, // timeout
@@ -110,7 +106,8 @@ public class BackupRestoreOperationTest extends AbstractCassandraIcarusTest {
                     null, // rename
                     null, // retry
                     false, // single
-                    dataDirs
+                    dataDirs,
+                    null
             );
 
             icarusHolder.icarusClient.waitForCompleted(icarusHolder.icarusClient.restore(restoreOperationRequest));
