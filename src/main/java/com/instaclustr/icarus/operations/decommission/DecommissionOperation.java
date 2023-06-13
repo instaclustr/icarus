@@ -30,8 +30,8 @@ public class DecommissionOperation extends Operation<DecommissionOperationReques
         this.cassandraVersionProvider = cassandraVersionProvider;
     }
 
-    // this constructor is not meant to be instantiated manually
-    // and it fulfills the purpose of deserialisation from JSON string to an Operation object, currently just for testing purposes
+    // this constructor is not meant to be instantiated manually,
+    // and it fulfills the purpose of deserialization from JSON string to an Operation object, currently just for testing purposes
     @JsonCreator
     private DecommissionOperation(@JsonProperty("type") final String type,
                                   @JsonProperty("id") final UUID id,
@@ -51,11 +51,11 @@ public class DecommissionOperation extends Operation<DecommissionOperationReques
         assert cassandraJMXService != null;
         assert cassandraVersionProvider != null;
 
-        if (cassandraVersionProvider.get().getMajor() == 4) {
+        if (cassandraVersionProvider.get().getMajor() >= 4) {
             cassandraJMXService.doWithCassandra4StorageServiceMBean(new FunctionWithEx<Cassandra4StorageServiceMBean, Void>() {
                 @Override
                 public Void apply(final Cassandra4StorageServiceMBean object) throws Exception {
-                    object.decommission(request.force == null ? true : request.force);
+                    object.decommission(request.force == null || request.force);
                     return null;
                 }
             });

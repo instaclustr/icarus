@@ -33,7 +33,7 @@ public class StopIcarusOperation extends Operation<StopIcarusOperationRequest> {
     @Override
     protected void run0() throws Exception {
         Awaitility.await().pollInterval(10, SECONDS).atMost(5, MINUTES).until(() -> {
-            final List<Operation> otherOperations = operationsService.getOperations(op -> op.request.getClass() != StopIcarusOperationRequest.class);
+            final List<Operation<?>> otherOperations = operationsService.getOperations(op -> op.request.getClass() != StopIcarusOperationRequest.class);
 
             if (otherOperations.size() != 0) {
                 logger.info("Waiting for operations to stop:  " + otherOperations.stream().map(op -> op.id).collect(toList()));

@@ -1,7 +1,5 @@
 package com.instaclustr.icarus.operations.cleanup;
 
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotEmpty;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -55,15 +53,13 @@ import com.instaclustr.operations.OperationRequest;
  */
 public class CleanupOperationRequest extends OperationRequest {
 
-    @NotEmpty
     public final String keyspace;
 
     public final Set<String> tables;
 
-    @Min(0)
     public final int jobs;
 
-    public CleanupOperationRequest(@NotEmpty final String keyspace, final Set<String> tables, @Min(0) final int jobs) {
+    public CleanupOperationRequest(final String keyspace, final Set<String> tables, final int jobs) {
         this("cleanup", keyspace, tables, jobs);
     }
 

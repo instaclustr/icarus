@@ -113,13 +113,13 @@ public class IcarusRestoreOperationCoordinator extends BaseRestoreOperationCoord
             int normalRequests = 0;
 
             for (final UUID uuid : restoreUUIDs) {
-                final Optional<Operation> operationOptional = operationsService.operation(uuid);
+                final Optional<Operation<?>> operationOptional = operationsService.operation(uuid);
 
                 if (!operationOptional.isPresent()) {
                     throw new IllegalStateException(format("received empty optional for uuid %s", uuid.toString()));
                 }
 
-                final Operation op = operationOptional.get();
+                final Operation<?> op = operationOptional.get();
 
                 if (!(op.request instanceof RestoreOperationRequest)) {
                     throw new IllegalStateException(format("Received request is not of type %s", RestoreOperationRequest.class));

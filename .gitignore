@@ -4,3 +4,5 @@ target/
 dependency-reduced-pom.xml
 *.log
 /run-cloud-tests.sh
+topology/
+src/main/resources/git.properties

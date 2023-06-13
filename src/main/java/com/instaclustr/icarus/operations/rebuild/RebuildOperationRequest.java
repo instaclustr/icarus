@@ -1,6 +1,5 @@
 package com.instaclustr.icarus.operations.rebuild;
 
-import javax.validation.constraints.NotEmpty;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -63,7 +62,6 @@ import com.instaclustr.operations.OperationRequest;
  *             pick any DC
  * }</pre>
  */
-@ValidRebuildOperationRequest
 public class RebuildOperationRequest extends OperationRequest {
 
     public final String sourceDC;
@@ -86,10 +84,8 @@ public class RebuildOperationRequest extends OperationRequest {
 
     public static final class TokenRange {
 
-        @NotEmpty
         public final String start;
 
-        @NotEmpty
         public final String end;
 
         @JsonCreator

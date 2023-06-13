@@ -1,15 +1,5 @@
 package com.instaclustr.icarus.embedded.singlenode;
 
-import static com.instaclustr.esop.impl.restore.RestorationPhase.RestorationPhaseType.INIT;
-import static com.instaclustr.esop.impl.restore.RestorationStrategy.RestorationStrategyType.HARDLINKS;
-import static com.instaclustr.io.FileUtils.deleteDirectory;
-
-import java.io.File;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.List;
-
 import com.instaclustr.esop.impl.DatabaseEntities;
 import com.instaclustr.esop.impl.StorageLocation;
 import com.instaclustr.esop.impl._import.ImportOperationRequest;
@@ -21,6 +11,16 @@ import com.instaclustr.icarus.embedded.AbstractCassandraIcarusTest;
 import com.instaclustr.icarus.rest.IcarusClient;
 import com.instaclustr.measure.DataRate;
 import org.testng.annotations.Test;
+
+import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.List;
+
+import static com.instaclustr.esop.impl.restore.RestorationPhase.RestorationPhaseType.INIT;
+import static com.instaclustr.esop.impl.restore.RestorationStrategy.RestorationStrategyType.HARDLINKS;
+import static com.instaclustr.io.FileUtils.deleteDirectory;
 
 /**
  * This tests invariant - what happens when we are doing distributed backup / restore on a cluster consisting of just one node.
@@ -38,8 +38,6 @@ public class SingleNodeDistributedBackupRestoreTest extends AbstractCassandraIca
                 null, // metadata
                 DatabaseEntities.parse(keyspaceName), //DatabaseEntities.parse("system_schema," + keyspaceName), // entities
                 snapshotName, // snapshot
-                "default", // k8s namespace
-                "test-sidecar-secret", // k8s secret
                 true, // !!! GLOBAL REQUEST !!!
                 null, // DC is null so will backup all datacenters
                 null, // timeout
@@ -51,7 +49,8 @@ public class SingleNodeDistributedBackupRestoreTest extends AbstractCassandraIca
                 null, // proxy
                 null, // retry
                 false, // skip refreshing
-                dataDirs // cassandra dir
+                dataDirs, // cassandra dir
+                null // kms
         );
     }
 
@@ -75,8 +74,6 @@ public class SingleNodeDistributedBackupRestoreTest extends AbstractCassandraIca
                 false, // noDownloadData
                 false, // exactSchemaVersion
                 null, // schema version
-                null, // k8s namespace
-                null, // k8s secret name
                 true, // !!! GLOBAL REQUEST !!!
                 null, // dc
                 null, // timeout,
@@ -88,7 +85,8 @@ public class SingleNodeDistributedBackupRestoreTest extends AbstractCassandraIca
                 null, // rename
                 null,
                 false,
-                dataDirs
+                dataDirs,
+                null
         );
     }
 
