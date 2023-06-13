@@ -38,8 +38,6 @@ public class SingleNodeDistributedBackupRestoreTest extends AbstractCassandraIca
                 null, // metadata
                 DatabaseEntities.parse(keyspaceName), //DatabaseEntities.parse("system_schema," + keyspaceName), // entities
                 snapshotName, // snapshot
-                "default", // k8s namespace
-                "test-sidecar-secret", // k8s secret
                 true, // !!! GLOBAL REQUEST !!!
                 null, // DC is null so will backup all datacenters
                 null, // timeout
@@ -51,7 +49,8 @@ public class SingleNodeDistributedBackupRestoreTest extends AbstractCassandraIca
                 null, // proxy
                 null, // retry
                 false, // skip refreshing
-                dataDirs // cassandra dir
+                dataDirs, // cassandra dir
+                null // kms
         );
     }
 
@@ -75,8 +74,6 @@ public class SingleNodeDistributedBackupRestoreTest extends AbstractCassandraIca
                 false, // noDownloadData
                 false, // exactSchemaVersion
                 null, // schema version
-                null, // k8s namespace
-                null, // k8s secret name
                 true, // !!! GLOBAL REQUEST !!!
                 null, // dc
                 null, // timeout,
@@ -88,7 +85,8 @@ public class SingleNodeDistributedBackupRestoreTest extends AbstractCassandraIca
                 null, // rename
                 null,
                 false,
-                dataDirs
+                dataDirs,
+                null
         );
     }
 

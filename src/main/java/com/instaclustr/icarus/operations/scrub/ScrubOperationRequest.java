@@ -1,7 +1,6 @@
 package com.instaclustr.icarus.operations.scrub;
 
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotEmpty;
+
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -80,10 +79,8 @@ public class ScrubOperationRequest extends OperationRequest {
     public final boolean noValidate;
     public final boolean reinsertOverflowedTTL;
 
-    @Min(0)
     public final int jobs;
 
-    @NotEmpty
     public final String keyspace;
 
     public final Set<String> tables;

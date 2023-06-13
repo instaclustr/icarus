@@ -1,7 +1,5 @@
 package com.instaclustr.icarus.operations.refresh;
 
-import javax.validation.constraints.NotEmpty;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.MoreObjects;
@@ -51,13 +49,11 @@ import com.instaclustr.operations.OperationRequest;
  */
 public class RefreshOperationRequest extends OperationRequest {
 
-    @NotEmpty
     public final String keyspace;
 
-    @NotEmpty
     public final String table;
 
-    public RefreshOperationRequest(@NotEmpty final String keyspace, @NotEmpty final String table) {
+    public RefreshOperationRequest(final String keyspace, final String table) {
         this("refresh", keyspace, table);
     }
 

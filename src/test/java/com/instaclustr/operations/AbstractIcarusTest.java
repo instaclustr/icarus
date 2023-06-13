@@ -6,8 +6,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import javax.validation.Validation;
-import javax.validation.Validator;
 import java.net.InetSocketAddress;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -43,8 +41,6 @@ import com.instaclustr.threading.ExecutorsModule;
 import jmx.org.apache.cassandra.service.CassandraJMXService;
 import org.apache.commons.lang3.tuple.Pair;
 import org.glassfish.jersey.server.ResourceConfig;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.AfterMethod;
@@ -63,8 +59,6 @@ public abstract class AbstractIcarusTest {
     JerseyHttpServerService serverService;
 
     IcarusClient icarusClient;
-
-    Validator validator;
 
     protected List<Module> getModules() {
         return ImmutableList.of();
@@ -86,12 +80,7 @@ public abstract class AbstractIcarusTest {
 
                     try {
 
-                        when(mock.doWithStorageServiceMBean(any())).then(new Answer<Object>() {
-                            @Override
-                            public Object answer(final InvocationOnMock invocation) {
-                                return 0;
-                            }
-                        });
+                        when(mock.doWithStorageServiceMBean(any())).then(invocation -> 0);
 
                         when(cassandraVersionMock.getMajor()).thenReturn(3);
                     } catch (Exception e) {
@@ -101,11 +90,7 @@ public abstract class AbstractIcarusTest {
                     bind(CassandraJMXService.class).toInstance(mock);
                     bind(CqlSessionService.class).toInstance(cqlSessionServiceMock);
                     bind(CassandraWaiter.class).toInstance(cassandraWaiterMock);
-                    bind(CassandraVersion.class).toProvider(new Provider<CassandraVersion>() {
-                        public CassandraVersion get() {
-                            return cassandraVersionMock;
-                        }
-                    });
+                    bind(CassandraVersion.class).toProvider(() -> cassandraVersionMock);
                 }
             });
             add(new JerseyHttpServerModule());
@@ -140,8 +125,6 @@ public abstract class AbstractIcarusTest {
                 .withPort(serverService.getServerInetAddress().getPort())
                 .withObjectMapper(objectMapper)
                 .build(resourceConfig);
-
-        validator = Validation.byDefaultProvider().configure().buildValidatorFactory().getValidator();
     }
 
     @AfterMethod

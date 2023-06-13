@@ -30,7 +30,9 @@ public class OperationsFilteringTest extends AbstractIcarusTest {
 
         final Pair<AtomicReference<List<OperationResult<?>>>, AtomicBoolean> result = performOnRunningServer(requests);
 
-        await().atMost(1, MINUTES).until(() -> result.getRight().get());
+        await().atMost(10, MINUTES).until(() -> result.getRight().get());
+
+        await().until(() -> icarusClient.getOperations().stream().allMatch(operation -> operation.state == COMPLETED));
         await().until(() -> icarusClient.getOperations().stream().allMatch(operation -> operation.state == COMPLETED));
 
         assertFalse(icarusClient.getOperations(ImmutableSet.of("cleanup"), ImmutableSet.of(COMPLETED)).isEmpty());

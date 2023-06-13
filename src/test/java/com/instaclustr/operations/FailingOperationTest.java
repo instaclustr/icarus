@@ -19,10 +19,7 @@ public class FailingOperationTest extends AbstractIcarusTest {
 
     @Test
     public void operationFailingTest() throws JsonProcessingException {
-
-
         final Function<IcarusClient, List<IcarusClient.OperationResult<?>>> requests = client -> of(client.performOperationSubmission(new FailingOperationRequest()));
-
         final Pair<AtomicReference<List<IcarusClient.OperationResult<?>>>, AtomicBoolean> result = performOnRunningServer(requests);
 
         await().atMost(1, MINUTES).until(() -> result.getRight().get());

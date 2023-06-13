@@ -85,8 +85,6 @@ public abstract class AbstractSingleNodeBackupFromScratchRestoreTest extends Abs
                                                           final String backupName) {
         return new RemoveBackupRequest("remove-backup",
                                        storageLocation,
-                                       null,
-                                       null,
                                        false,
                                        false,
                                        null,
@@ -104,8 +102,6 @@ public abstract class AbstractSingleNodeBackupFromScratchRestoreTest extends Abs
     private ListOperationRequest createListRequest(final StorageLocation storageLocation) {
         return new ListOperationRequest("list",
                                         storageLocation,
-                                        null,
-                                        null,
                                         false,
                                         false,
                                         null,
@@ -151,8 +147,6 @@ public abstract class AbstractSingleNodeBackupFromScratchRestoreTest extends Abs
                 null, // metadata
                 null, //DatabaseEntities.parse("system_schema," + keyspaceName), // entities
                 snapshotName, // snapshot
-                "default", // k8s namespace
-                "test-sidecar-secret", // k8s secret
                 true, // !!! GLOBAL REQUEST !!!
                 null, // DC is null so will backup all datacenters
                 null, // timeout
@@ -164,7 +158,8 @@ public abstract class AbstractSingleNodeBackupFromScratchRestoreTest extends Abs
                 null, // proxy settings
                 new RetrySpec(10, RetrySpec.RetryStrategy.EXPONENTIAL, 3, true), // retry
                 false, // skip refreshing
-                dataDirs
+                dataDirs,
+                null
         );
     }
 
@@ -191,8 +186,6 @@ public abstract class AbstractSingleNodeBackupFromScratchRestoreTest extends Abs
                 false, // noDownloadData
                 false, // exactSchemaVersion
                 null, // schema version
-                null, // k8s namespace
-                null, // k8s secret name
                 false, // !!! GLOBAL REQUEST !!!
                 null, // dc
                 null, // timeout,
@@ -204,7 +197,8 @@ public abstract class AbstractSingleNodeBackupFromScratchRestoreTest extends Abs
                 null, // rename
                 new RetrySpec(10, RetrySpec.RetryStrategy.EXPONENTIAL, 3, true), // retry
                 false,
-                dataDirs
+                dataDirs,
+                null
         );
     }
 

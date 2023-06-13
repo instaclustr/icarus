@@ -1,7 +1,5 @@
 package com.instaclustr.icarus.operations.flush;
 
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -11,12 +9,11 @@ import com.instaclustr.operations.OperationRequest;
 
 public class FlushOperationRequest extends OperationRequest {
 
-    @NotEmpty
     public String keyspace;
 
     public Set<String> tables;
 
-    public FlushOperationRequest(@NotNull final String keyspace, final Set<String> tables) {
+    public FlushOperationRequest(final String keyspace, final Set<String> tables) {
         this("flush", keyspace, tables);
     }
 

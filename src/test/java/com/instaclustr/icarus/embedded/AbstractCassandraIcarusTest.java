@@ -47,7 +47,7 @@ public abstract class AbstractCassandraIcarusTest {
 
     protected static final Logger logger = LoggerFactory.getLogger(AbstractCassandraIcarusTest.class);
 
-    protected static final String CASSANDRA_VERSION = System.getProperty("cassandra.version", "4.0.0");
+    protected static final String CASSANDRA_VERSION = System.getProperty("cassandra.version", "5.0-alpha1");
 
     protected final Path cassandraDir = new File("target/cassandra").toPath().toAbsolutePath();
     protected final List<Path> dataDirs = Arrays.asList(cassandraDir.resolve("data").resolve("data"));

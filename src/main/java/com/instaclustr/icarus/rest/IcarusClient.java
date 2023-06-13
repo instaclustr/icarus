@@ -4,16 +4,10 @@ import static com.instaclustr.operations.Operation.State.COMPLETED;
 import static com.instaclustr.operations.Operation.State.FAILED;
 import static com.instaclustr.operations.Operation.State.PENDING;
 import static com.instaclustr.operations.Operation.State.RUNNING;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static java.lang.String.format;
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.Response.Status.CREATED;
 import static org.awaitility.Awaitility.await;
 
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.Response;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -59,8 +53,6 @@ import com.instaclustr.icarus.operations.rebuild.RebuildOperation;
 import com.instaclustr.icarus.operations.rebuild.RebuildOperationRequest;
 import com.instaclustr.icarus.operations.refresh.RefreshOperation;
 import com.instaclustr.icarus.operations.refresh.RefreshOperationRequest;
-import com.instaclustr.icarus.operations.restart.RestartOperation;
-import com.instaclustr.icarus.operations.restart.RestartOperationRequest;
 import com.instaclustr.icarus.operations.icarus.StopIcarusOperation;
 import com.instaclustr.icarus.operations.icarus.StopIcarusOperationRequest;
 import com.instaclustr.icarus.operations.scrub.ScrubOperation;
@@ -73,6 +65,11 @@ import com.instaclustr.esop.topology.CassandraClusterTopology.ClusterTopology;
 import com.instaclustr.operations.Operation;
 import com.instaclustr.operations.Operation.State;
 import com.instaclustr.operations.OperationRequest;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.Response;
 import org.awaitility.Duration;
 import org.awaitility.core.ConditionFactory;
 import org.glassfish.jersey.server.ResourceConfig;
@@ -250,10 +247,6 @@ public class IcarusClient implements Closeable {
         return drain(new DrainOperationRequest());
     }
 
-    public OperationResult<RestartOperation> restart(final RestartOperationRequest operationRequest) {
-        return performOperationSubmission(operationRequest);
-    }
-
     public OperationResult<StopIcarusOperation> stopSidecarOperation(final StopIcarusOperationRequest operationRequest) {
         return performOperationSubmission(operationRequest);
     }
@@ -314,7 +307,13 @@ public class IcarusClient implements Closeable {
             webTarget = webTarget.queryParam("state", states.stream().map(State::name).toArray());
         }
 
-        return Arrays.asList(webTarget.request(APPLICATION_JSON).get(Operation[].class));
+        try {
+            return Arrays.asList(webTarget.request(APPLICATION_JSON).get(Operation[].class));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
+        return null;
     }
 
     public static String responseEntityToString(final Response response) throws IOException {
@@ -334,7 +333,7 @@ public class IcarusClient implements Closeable {
             throw new IllegalStateException("Unable to read operation back!", ex);
         }
 
-        if (post.getStatusInfo().toEnum() != CREATED) {
+        if (post.getStatusInfo().toEnum() != Response.Status.CREATED) {
             return new OperationResult<O>(null, post);
         }
 

@@ -36,8 +36,6 @@ public class BackupRestoreOperationTest extends AbstractCassandraIcarusTest {
                     null, // metadata directive
                     DatabaseEntities.parse(keyspaceName),
                     "stefansnapshot", // snapshot
-                    "default", // k8s namespace
-                    "test-sidecar-secret", // k8s secret
                     false, // global request
                     null, // dc
                     null, // timeout
@@ -49,7 +47,8 @@ public class BackupRestoreOperationTest extends AbstractCassandraIcarusTest {
                     null, // proxy
                     null, // retry
                     false, // skip refreshing
-                    dataDirs
+                    dataDirs,
+                    null
             );
 
             final OperationResult<BackupOperation> result = icarusHolder.icarusClient.backup(backupOperationRequest);
@@ -97,8 +96,6 @@ public class BackupRestoreOperationTest extends AbstractCassandraIcarusTest {
                     false, // no download data
                     false, // exact schema version
                     null, // schema version
-                    null, // k8s namespace
-                    null, // k8s secret name
                     false, // NO GLOBAL REQUEST
                     null, // dc
                     null, // timeout
@@ -110,7 +107,8 @@ public class BackupRestoreOperationTest extends AbstractCassandraIcarusTest {
                     null, // rename
                     null, // retry
                     false, // single
-                    dataDirs
+                    dataDirs,
+                    null
             );
 
             icarusHolder.icarusClient.waitForCompleted(icarusHolder.icarusClient.restore(restoreOperationRequest));

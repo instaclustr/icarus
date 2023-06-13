@@ -1,23 +1,22 @@
 package com.instaclustr.icarus.resource;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Response;
-
+import com.google.inject.Inject;
 import com.instaclustr.icarus.service.CassandraStatusService;
 import com.instaclustr.icarus.service.CassandraStatusService.Status;
-
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 @Path("/status")
-@Produces(APPLICATION_JSON)
+@Produces(MediaType.APPLICATION_JSON)
 public class StatusResource {
 
     private final CassandraStatusService statusService;
 
     @Inject
+    @jakarta.inject.Inject
     public StatusResource(final CassandraStatusService statusService) {
         this.statusService = statusService;
     }
