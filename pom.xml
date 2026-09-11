@@ -5,7 +5,7 @@
 
     <groupId>com.instaclustr</groupId>
     <artifactId>icarus</artifactId>
-    <version>3.0.0</version>
+    <version>3.0.0-esop4.1.12-poc</version>
 
     <name>instaclustr-icarus</name>
     <description>Sidecar for Apache Cassandra</description>
