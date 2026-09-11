@@ -16,7 +16,10 @@ import java.util.concurrent.Callable;
 import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
 import com.instaclustr.cassandra.CassandraModule;
-import com.instaclustr.esop.guice.StorageModules;
+import com.instaclustr.esop.azure.AzureModule;
+import com.instaclustr.esop.gcp.GCPModule;
+import com.instaclustr.esop.local.LocalFileModule;
+import com.instaclustr.esop.s3.aws_v2.S3Module;
 import com.instaclustr.esop.impl._import.ImportModule;
 import com.instaclustr.esop.impl.backup.BackupModules;
 import com.instaclustr.esop.impl.backup.BackupModules.BackupModule;
@@ -161,7 +164,13 @@ public final class Icarus extends CLIApplication implements Callable<Void> {
 
     public static List<AbstractModule> backupRestoreModules(final HashSpec hashSpec) {
         return new ArrayList<AbstractModule>() {{
-            add(new StorageModules());
+            // esop 4.x split the single "esop" jar (and its StorageModules umbrella) into
+            // esop-core/esop-s3/esop-azure/esop-gcp -- install each cloud module directly,
+            // matching what StorageModules used to do in esop 3.x.
+            add(new AzureModule());
+            add(new GCPModule());
+            add(new LocalFileModule());
+            add(new S3Module());
             add(new BackupModule());
             add(new CommitlogBackupModule());
             add(new RestoreModule());

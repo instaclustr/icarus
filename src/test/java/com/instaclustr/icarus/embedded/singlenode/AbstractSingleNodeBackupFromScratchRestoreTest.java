@@ -27,7 +27,9 @@ import static org.testng.Assert.assertFalse;
 
 public abstract class AbstractSingleNodeBackupFromScratchRestoreTest extends AbstractCassandraIcarusTest {
 
-    public static String BUCKET = UUID.randomUUID().toString();
+    // prefixed so a CI IAM policy can be scoped to "icarus-poc-*" instead of every bucket
+    // in the account, since each run creates a bucket with a fresh, unpredictable name.
+    public static String BUCKET = "icarus-poc-" + UUID.randomUUID().toString();
 
     protected void backupTest(String cloud) throws Exception {
 

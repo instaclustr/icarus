@@ -5,7 +5,6 @@ import static java.lang.String.format;
 import static java.util.concurrent.CompletableFuture.allOf;
 import static java.util.concurrent.CompletableFuture.supplyAsync;
 
-import javax.inject.Provider;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,6 +15,7 @@ import java.util.concurrent.ExecutorService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
+import com.google.inject.Provider;
 import com.instaclustr.cassandra.CassandraVersion;
 import com.instaclustr.esop.guice.BackuperFactory;
 import com.instaclustr.esop.guice.BucketServiceFactory;
